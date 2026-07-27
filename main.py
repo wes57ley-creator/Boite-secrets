@@ -10,7 +10,7 @@ SUPABASE_KEY = "sb_publishable_8E3SXSuiyAcjwErBkxeRIw_HnddoigJ"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Design HTML
+# Design HTML "Eyes Wide Shut"
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
@@ -18,42 +18,128 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boîte à Secrets</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #f0f2f5; margin: 0; padding: 20px; }
-        .card { background: white; max-width: 500px; margin: 20px auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        textarea, input[type="text"] { width: 90%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 15px; }
-        button { background: #007bff; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 6px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .tirage-btn { background: #28a745; margin-top: 15px; }
-        .tirage-btn:hover { background: #218838; }
-        .resultat { font-size: 20px; font-weight: bold; color: #dc3545; margin-top: 20px; padding: 15px; background: #ffe6e6; border-radius: 8px; }
-        .list-item { text-align: left; background: #f8f9fa; padding: 10px; border-bottom: 1px solid #ddd; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; }
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            text-align: center; 
+            background: #0d0d0d; 
+            color: #e0e0e0; 
+            margin: 0; 
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: radial-gradient(circle at center, #1a1625 0%, #08070c 100%);
+        }
+        .card { 
+            background: rgba(20, 20, 25, 0.85); 
+            max-width: 480px; 
+            width: 90%;
+            padding: 40px 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 15px rgba(212, 175, 55, 0.15); 
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        h1 { 
+            font-family: 'Cinzel', serif; 
+            color: #d4af37; 
+            font-size: 28px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+            text-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+        }
+        textarea { 
+            width: 90%; 
+            padding: 12px; 
+            background: rgba(10, 10, 12, 0.7);
+            border: 1px solid #444; 
+            border-radius: 8px; 
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            margin-bottom: 20px; 
+            resize: none;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        textarea:focus {
+            border-color: #d4af37;
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+        button { 
+            background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%); 
+            color: #0d0d0d; 
+            border: none; 
+            padding: 14px 24px; 
+            font-size: 14px; 
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border-radius: 30px; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        button:hover { 
+            background: linear-gradient(135deg, #f3e5ab 0%, #d4af37 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+        }
+        .tirage-btn { 
+            background: transparent; 
+            color: #d4af37;
+            border: 1px solid #d4af37;
+            margin-top: 20px; 
+        }
+        .tirage-btn:hover { 
+            background: rgba(212, 175, 55, 0.1); 
+            color: #f3e5ab;
+        }
+        .resultat { 
+            font-family: 'Cinzel', serif;
+            font-size: 18px; 
+            color: #f3e5ab; 
+            margin-top: 25px; 
+            padding: 20px; 
+            background: rgba(212, 175, 55, 0.08); 
+            border: 1px dashed rgba(212, 175, 55, 0.4);
+            border-radius: 12px; 
+            line-height: 1.6;
+        }
+        .message {
+            color: #888;
+            font-style: italic;
+            font-size: 13px;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>✨ Boîte à Secrets ✨</h1>
+        <h1>🎭 Fidelio 🎭</h1>
         
         <form action="/ajouter" method="POST">
-            <textarea name="idee" rows="3" placeholder="Tape ton idée ou ton secret ici..." required></textarea><br>
-            <button type="submit">Ajouter l'idée</button>
+            <textarea name="idee" rows="3" placeholder="Murmurez votre secret ici..." required></textarea><br>
+            <button type="submit">Sceller le secret</button>
         </form>
 
         <form action="/tirer" method="POST">
-            <button type="submit" class="tirage-btn">🎲 Tirer au sort une idée</button>
+            <button type="submit" class="tirage-btn">🔮 Révéler un secret</button>
         </form>
 
         {% if idee_tiree %}
             <div class="resultat">
-                🎉 Idée tirée au sort :<br><br>
-                "{{ idee_tiree }}"
-                <br><small style="font-size:12px; color:#666;">(Cette idée a été tirée et supprimée de la boîte !)</small>
+                📜 Secret révélé :<br><br>
+                <em>« {{ idee_tiree }} »</em>
+                <br><br><small style="font-size:11px; color:#888; font-family:'Montserrat';">(Ce secret s'est dissipé à jamais...)</small>
             </div>
         {% endif %}
 
         {% if message %}
-            <p style="color: green;">{{ message }}</p>
+            <p class="message">{{ message }}</p>
         {% endif %}
     </div>
 </body>
@@ -69,7 +155,7 @@ def ajouter():
     nouvelle_idee = request.form.get('idee')
     if nouvelle_idee:
         supabase.table('idees').insert({"texte": nouvelle_idee}).execute()
-    return render_template_string(HTML_TEMPLATE, message="Idée ajoutée avec succès !")
+    return render_template_string(HTML_TEMPLATE, message="Votre secret a été scellé dans l'ombre.")
 
 @app.route('/tirer', methods=['POST'])
 def tirer():
@@ -77,12 +163,12 @@ def tirer():
     idees = res.data
     
     if not idees:
-        return render_template_string(HTML_TEMPLATE, message="La boîte est vide ! Ajoutez des idées.")
+        return render_template_string(HTML_TEMPLATE, message="La boîte est vide. Aucun secret n'attend dans l'ombre.")
     
     # Tirage au sort
     choix = random.choice(idees)
     
-    # Option A : Supprimer l'idée tirée de la base de données
+    # Supprimer l'idée tirée de Supabase
     supabase.table('idees').delete().eq('id', choix['id']).execute()
     
     return render_template_string(HTML_TEMPLATE, idee_tiree=choix['texte'])
@@ -91,7 +177,7 @@ def tirer():
 def admin():
     res = supabase.table('idees').select("*").execute()
     idees = res.data
-    return f"<h1>Administration</h1><p>Nombre d'idées en attente : {len(idees)}</p><ul>" + "".join([f"<li>{i['texte']}</li>" for i in idees]) + "</ul><br><a href='/'>Retour</a>"
+    return f"<body style='background:#0d0d0d; color:#d4af37; font-family:sans-serif; padding:20px;'><h1>Secrets en attente ({len(idees)})</h1><ul>" + "".join([f"<li>{i['texte']}</li>" for i in idees]) + "</ul><br><a href='/' style='color:#fff;'>Retour</a></body>"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
