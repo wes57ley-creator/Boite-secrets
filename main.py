@@ -165,28 +165,33 @@ HTML_TEMPLATE = """
         }
 
         .secret-item {
-            padding: 15px;
+            padding: 20px;
             margin-bottom: 15px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-style: italic;
             word-break: break-word;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            text-align: center;
+            font-size: 1.1em;
+            line-height: 1.5;
         }
 
         /* Vos secrets (Admin) = OR */
         .secret-gold {
-            background: rgba(212, 175, 55, 0.1);
-            border-left: 3px solid #d4af37;
+            background: rgba(212, 175, 55, 0.12);
+            border: 1px solid rgba(212, 175, 55, 0.5);
             color: #f3e5ab;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
         }
 
         /* Secrets invités = ROSE FONCÉ */
         .secret-pink {
-            background: rgba(194, 24, 91, 0.1);
-            border-left: 3px solid #c2185b;
+            background: rgba(194, 24, 91, 0.12);
+            border: 1px solid rgba(194, 24, 91, 0.5);
             color: #f8bbd0;
+            box-shadow: 0 0 15px rgba(194, 24, 91, 0.2);
         }
 
         .delete-btn {
@@ -202,6 +207,14 @@ HTML_TEMPLATE = """
             text-align: center;
             font-size: 0.85em;
             margin-bottom: 15px;
+        }
+
+        .warning-text {
+            color: #8a7a6a;
+            font-size: 0.75em;
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
         }
     </style>
 </head>
@@ -219,7 +232,7 @@ HTML_TEMPLATE = """
                 
                 <div class="buttons-group">
                     <button type="submit" class="btn btn-submit">Sceller 🔑</button>
-                    <a href="/secrets" class="btn btn-reveal">Révéler</a>
+                    <a href="/reveal_next" class="btn btn-reveal">Révéler</a>
                 </div>
             </form>
 
@@ -228,20 +241,27 @@ HTML_TEMPLATE = """
                 <div class="counter-label">Secrets Scellés</div>
             </div>
 
-        {% elif view == 'secrets' %}
-            <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center;">Confidences Révélées</label>
+        {% elif view == 'reveal' %}
+            <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center;">Secret Révélé</label>
             
-            {% for s in secrets %}
-                <div class="secret-item {% if s.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
-                    "{{ s.clean_text }}"
+            {% if secret %}
+                <div class="secret-item {% if secret.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
+                    "{{ secret.clean_text }}"
+                </div>
+                <p class="warning-text">🔥 Ce secret s'est auto-détruit. Il n'existe plus.</p>
+
+                <div style="margin-top: 25px; display:flex; flex-direction:column; gap:10px;">
+                    {% if remaining_secrets > 0 %}
+                        <a href="/reveal_next" class="btn btn-reveal" style="width: 100%;">Secret Suivant ({{ remaining_secrets }} restant{% if remaining_secrets > 1 %}s{% endif %})</a>
+                    {% endif %}
+                    <a href="/" class="btn btn-submit" style="width: 100%;">Déposer un secret</a>
                 </div>
             {% else %}
-                <p style="text-align:center; color:#8a7a6a; font-style:italic;">Aucun secret n'a encore été scellé...</p>
-            {% endfor %}
-
-            <div style="margin-top: 25px;">
-                <a href="/" class="btn btn-submit" style="width: 100%;">Déposer un secret</a>
-            </div>
+                <p style="text-align:center; color:#8a7a6a; font-style:italic; margin: 30px 0;">La boîte est vide... Aucun secret n'est scellé pour le moment.</p>
+                <div style="margin-top: 25px;">
+                    <a href="/" class="btn btn-submit" style="width: 100%;">Déposer un secret</a>
+                </div>
+            {% endif %}
 
         {% elif view == 'login' %}
             <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center; color:#d4af37;">Accès Restreint</label>
@@ -267,9 +287,11 @@ HTML_TEMPLATE = """
                 <textarea name="content" placeholder="Déposer un secret d'Or (Créateur)..." style="height: 80px;" required></textarea>
                 <button type="submit" class="btn btn-reveal" style="width: 100%;">Sceller en Or ✨</button>
             </form>
+
+            <p style="text-align:center; color:#8a7a6a; font-size:0.8em; margin-bottom:15px;">Secrets actuellement en attente dans la boîte :</p>
             
             {% for s in secrets %}
-                <div class="secret-item {% if s.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
+                <div class="secret-item {% if s.is_admin %}secret-gold{% else %}secret-pink{% endif %}" style="font-size:0.9em; padding:10px;">
                     <span>"{{ s.clean_text }}"</span>
                     {% if s.id %}
                         <a href="/delete/{{ s.id }}" class="delete-btn" onclick="return confirm('Supprimer ce secret ?')">❌</a>
@@ -289,26 +311,29 @@ HTML_TEMPLATE = """
 </html>
 """
 
+def parse_single_secret(item):
+    if not item or not isinstance(item, dict):
+        return None
+    raw_text = item.get('content') or item.get('texte') or item.get('idee') or ""
+    is_admin = False
+    if raw_text.startswith("[ADMIN]"):
+        is_admin = True
+        clean_text = raw_text.replace("[ADMIN]", "", 1)
+    else:
+        clean_text = raw_text
+
+    return {
+        'id': item.get('id'),
+        'clean_text': clean_text,
+        'is_admin': is_admin
+    }
+
 def process_secrets(data):
     clean_list = []
     for item in data:
-        if isinstance(item, dict):
-            # Extraire le texte quelle que soit la colonne
-            raw_text = item.get('content') or item.get('texte') or item.get('idee') or ""
-            
-            # Vérifier si c'est un secret admin
-            is_admin = False
-            if raw_text.startswith("[ADMIN]"):
-                is_admin = True
-                clean_text = raw_text.replace("[ADMIN]", "", 1)
-            else:
-                clean_text = raw_text
-
-            clean_list.append({
-                'id': item.get('id'),
-                'clean_text': clean_text,
-                'is_admin': is_admin
-            })
+        s = parse_single_secret(item)
+        if s:
+            clean_list.append(s)
     return clean_list
 
 @app.route('/')
@@ -326,18 +351,41 @@ def home():
             
     return render_template_string(HTML_TEMPLATE, view='home', total_secrets=total_secrets)
 
-@app.route('/secrets')
-def secrets():
-    secrets_list = []
+@app.route('/reveal_next')
+def reveal_next():
+    secret_to_show = None
+    remaining_secrets = 0
+
     if supabase:
         try:
-            res = supabase.table('idees').select('*').limit(50).execute()
-            if res.data:
-                secrets_list = process_secrets(res.data)
-        except Exception as e:
-            print("Erreur Supabase Secrets:", e)
+            # 1. Récupérer UN seul secret (le plus ancien)
+            res = supabase.table('idees').select('*').limit(1).execute()
             
-    return render_template_string(HTML_TEMPLATE, view='secrets', secrets=secrets_list)
+            if res.data and len(res.data) > 0:
+                raw_item = res.data[0]
+                secret_to_show = parse_single_secret(raw_item)
+                secret_id = raw_item.get('id')
+
+                # 2. Le supprimer immédiatement de la base de données (Auto-destruction)
+                if secret_id:
+                    supabase.table('idees').delete().eq('id', secret_id).execute()
+
+                # 3. Compter combien il en reste
+                count_res = supabase.table('idees').select('*', count='exact').execute()
+                if count_res.count is not None:
+                    remaining_secrets = count_res.count
+                elif count_res.data:
+                    remaining_secrets = len(count_res.data)
+
+        except Exception as e:
+            print("Erreur Révélation Supabase:", e)
+
+    return render_template_string(
+        HTML_TEMPLATE, 
+        view='reveal', 
+        secret=secret_to_show, 
+        remaining_secrets=remaining_secrets
+    )
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
