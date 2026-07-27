@@ -164,7 +164,6 @@ HTML_TEMPLATE = """
             margin-top: 4px;
         }
 
-        /* --- STYLES DES SECRETS (OR vs ROSE FONCÉ) --- */
         .secret-item {
             padding: 15px;
             margin-bottom: 15px;
@@ -174,23 +173,20 @@ HTML_TEMPLATE = """
             display: flex;
             justify-content: space-between;
             align-items: center;
-            backdrop-filter: blur(5px);
         }
 
-        /* Vos secrets (Page Admin) = OR ELEGANT */
+        /* Vos secrets (Admin) = OR */
         .secret-gold {
-            background: rgba(212, 175, 55, 0.08);
+            background: rgba(212, 175, 55, 0.1);
             border-left: 3px solid #d4af37;
             color: #f3e5ab;
-            box-shadow: 0 2px 10px rgba(212, 175, 55, 0.15);
         }
 
-        /* Secrets des invités (Page Accueil) = ROSE FONCÉ / RUBIS */
+        /* Secrets invités = ROSE FONCÉ */
         .secret-pink {
-            background: rgba(194, 24, 91, 0.08);
+            background: rgba(194, 24, 91, 0.1);
             border-left: 3px solid #c2185b;
             color: #f8bbd0;
-            box-shadow: 0 2px 10px rgba(194, 24, 91, 0.15);
         }
 
         .delete-btn {
@@ -218,7 +214,6 @@ HTML_TEMPLATE = """
     <div class="card">
         {% if view == 'home' %}
             <form action="/add" method="POST">
-                <input type="hidden" name="is_admin" value="false">
                 <label class="form-title">Enfermez votre secret...</label>
                 <textarea name="content" placeholder="Un désir, une confidence, un interdit..." required></textarea>
                 
@@ -238,7 +233,7 @@ HTML_TEMPLATE = """
             
             {% for s in secrets %}
                 <div class="secret-item {% if s.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
-                    "{{ s.content or s.texte or s.idee or s }}"
+                    "{{ s.clean_text }}"
                 </div>
             {% else %}
                 <p style="text-align:center; color:#8a7a6a; font-style:italic;">Aucun secret n'a encore été scellé...</p>
@@ -267,16 +262,15 @@ HTML_TEMPLATE = """
         {% elif view == 'admin' %}
             <label class="form-title" style="margin-bottom: 15px; display:block; text-align:center; color:#d4af37;">Espace Admin (Gestion)</label>
 
-            <!-- FORMULAIRE SPECIAL ADMIN POUR VOS SECRETS DORÉS -->
-            <form action="/add" method="POST" style="margin-bottom: 25px;">
-                <input type="hidden" name="is_admin" value="true">
-                <textarea name="content" placeholder="Déposer un secret d'Or (Admin)..." style="height: 80px;" required></textarea>
+            <!-- FORMULAIRE SPECIAL ADMIN -->
+            <form action="/add_admin" method="POST" style="margin-bottom: 25px;">
+                <textarea name="content" placeholder="Déposer un secret d'Or (Créateur)..." style="height: 80px;" required></textarea>
                 <button type="submit" class="btn btn-reveal" style="width: 100%;">Sceller en Or ✨</button>
             </form>
             
             {% for s in secrets %}
                 <div class="secret-item {% if s.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
-                    <span>"{{ s.content or s.texte or s.idee or s }}"</span>
+                    <span>"{{ s.clean_text }}"</span>
                     {% if s.id %}
                         <a href="/delete/{{ s.id }}" class="delete-btn" onclick="return confirm('Supprimer ce secret ?')">❌</a>
                     {% endif %}
@@ -295,12 +289,27 @@ HTML_TEMPLATE = """
 </html>
 """
 
-def extract_secrets(data):
-    clean = []
+def process_secrets(data):
+    clean_list = []
     for item in data:
         if isinstance(item, dict):
-            clean.append(item)
-    return clean
+            # Extraire le texte quelle que soit la colonne
+            raw_text = item.get('content') or item.get('texte') or item.get('idee') or ""
+            
+            # Vérifier si c'est un secret admin
+            is_admin = False
+            if raw_text.startswith("[ADMIN]"):
+                is_admin = True
+                clean_text = raw_text.replace("[ADMIN]", "", 1)
+            else:
+                clean_text = raw_text
+
+            clean_list.append({
+                'id': item.get('id'),
+                'clean_text': clean_text,
+                'is_admin': is_admin
+            })
+    return clean_list
 
 @app.route('/')
 def home():
@@ -322,9 +331,9 @@ def secrets():
     secrets_list = []
     if supabase:
         try:
-            res = supabase.table('idees').select('*').limit(30).execute()
+            res = supabase.table('idees').select('*').limit(50).execute()
             if res.data:
-                secrets_list = extract_secrets(res.data)
+                secrets_list = process_secrets(res.data)
         except Exception as e:
             print("Erreur Supabase Secrets:", e)
             
@@ -348,7 +357,7 @@ def admin():
         try:
             res = supabase.table('idees').select('*').execute()
             if res.data:
-                secrets_list = extract_secrets(res.data)
+                secrets_list = process_secrets(res.data)
         except Exception as e:
             print("Erreur Supabase Admin:", e)
             
@@ -362,24 +371,30 @@ def logout():
 @app.route('/add', methods=['POST'])
 def add_secret():
     content = request.form.get('content')
-    is_admin_str = request.form.get('is_admin', 'false')
-    is_admin = True if is_admin_str == 'true' else False
-
     if content and supabase:
-        data_to_insert = {'content': content, 'is_admin': is_admin}
         try:
             try:
-                supabase.table('idees').insert(data_to_insert).execute()
+                supabase.table('idees').insert({'content': content}).execute()
             except:
-                # Si le champ content s'appelle 'texte'
-                supabase.table('idees').insert({'texte': content, 'is_admin': is_admin}).execute()
+                supabase.table('idees').insert({'texte': content}).execute()
         except Exception as e:
             print("Erreur enregistrement:", e)
-
-    # Rediriger vers l'admin si l'envoi vient de l'admin, sinon vers l'accueil
-    if is_admin:
-        return redirect(url_for('admin'))
     return redirect(url_for('home'))
+
+@app.route('/add_admin', methods=['POST'])
+def add_admin_secret():
+    if session.get('logged_in'):
+        content = request.form.get('content')
+        if content and supabase:
+            admin_content = "[ADMIN]" + content
+            try:
+                try:
+                    supabase.table('idees').insert({'content': admin_content}).execute()
+                except:
+                    supabase.table('idees').insert({'texte': admin_content}).execute()
+            except Exception as e:
+                print("Erreur enregistrement admin:", e)
+    return redirect(url_for('admin'))
 
 @app.route('/delete/<int:secret_id>')
 def delete_secret(secret_id):
