@@ -6,8 +6,8 @@ app = Flask(__name__)
 
 # Config Supabase
 SUPABASE_URL = "https://invjsfghohqxsvtthnkp.supabase.co"
-SUPABASE_KEY = "sb_publishable_8E3SXSuiyAcjwErBk..."
-sb_publishable_8E3SXSuiyAcjwErBkxeRIw_HnddoigJ
+SUPABASE_KEY = "sb_publishable_8E3SXSuiyAcjwErBkxeRIw_HnddoigJ..." # <--- Remplace ce texte entre guillemets par ta clé complète Publishable key copiée de Supabase
+
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Design HTML
