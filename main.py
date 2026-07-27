@@ -18,7 +18,7 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print("Erreur initialisation Supabase:", e)
 
-# --- DESIGN HTML LUXUEUX ---
+# --- DESIGN EYES WIDE SHUT + CHÂTEAU + ANIMATION MYSTIQUE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
@@ -216,6 +216,87 @@ HTML_TEMPLATE = """
             margin-top: 10px;
             font-style: italic;
         }
+
+        /* --- ANIMATION DU SCEAU --- */
+        .reveal-box {
+            position: relative;
+            min-height: 120px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .seal-wrapper {
+            position: absolute;
+            z-index: 2;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .seal-wrapper:hover { transform: scale(1.08); }
+
+        .seal {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .seal-gold {
+            background: radial-gradient(circle at 30% 30%, #f3e5ab, #d4af37, #996515);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+        }
+
+        .seal-pink {
+            background: radial-gradient(circle at 30% 30%, #f8bbd0, #c2185b, #6b002b);
+            box-shadow: 0 0 20px rgba(194, 24, 91, 0.6);
+        }
+
+        .seal-icon { font-size: 1.8rem; color: #0d0d0d; user-select: none; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .seal-wrapper.breaking {
+            animation: pulse-break 0.7s forwards;
+        }
+
+        @keyframes pulse-break {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.3); filter: brightness(2); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .secret-text {
+            opacity: 0;
+            visibility: hidden;
+            width: 100%;
+        }
+
+        .secret-text.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .letter {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(8px);
+            filter: blur(4px);
+            transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+        }
+
+        .letter.reveal {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
     </style>
 </head>
 <body>
@@ -242,20 +323,75 @@ HTML_TEMPLATE = """
             </div>
 
         {% elif view == 'reveal' %}
-            <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center;">Secret Révélé</label>
+            <label class="form-title" style="margin-bottom: 10px; display:block; text-align:center;">Secret Révélé</label>
             
             {% if secret %}
-                <div class="secret-item {% if secret.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
-                    "{{ secret.clean_text }}"
-                </div>
-                <p class="warning-text">🔥 Ce secret s'est auto-détruit. Il n'existe plus.</p>
+                <div class="reveal-box">
+                    <div class="seal-wrapper" id="sealWrapper" onclick="breakSeal()">
+                        <div class="seal {% if secret.is_admin %}seal-gold{% else %}seal-pink{% endif %}">
+                            <span class="seal-icon">✦</span>
+                        </div>
+                    </div>
 
-                <div style="margin-top: 25px; display:flex; flex-direction:column; gap:10px;">
+                    <div id="secretContainer" class="secret-text secret-item {% if secret.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
+                        "<span id="secretText">{{ secret.clean_text }}</span>"
+                    </div>
+                </div>
+
+                <p id="hintText" style="text-align:center; color:#d4af37; font-size:0.8em; margin-bottom:10px; cursor:pointer;" onclick="breakSeal()">👉 Touchez le sceau pour le briser...</p>
+                <p class="warning-text" id="warningText" style="display:none;">🔥 Ce secret s'est auto-détruit. Il n'existe plus.</p>
+
+                <div id="actionButtons" style="margin-top: 20px; display:none; flex-direction:column; gap:10px;">
                     {% if remaining_secrets > 0 %}
                         <a href="/reveal_next" class="btn btn-reveal" style="width: 100%;">Secret Suivant ({{ remaining_secrets }} restant{% if remaining_secrets > 1 %}s{% endif %})</a>
                     {% endif %}
                     <a href="/" class="btn btn-submit" style="width: 100%;">Déposer un secret</a>
                 </div>
+
+                <script>
+                    let isBroken = false;
+                    function breakSeal() {
+                        if (isBroken) return;
+                        isBroken = true;
+
+                        const seal = document.getElementById('sealWrapper');
+                        const container = document.getElementById('secretContainer');
+                        const textSpan = document.getElementById('secretText');
+                        const hintText = document.getElementById('hintText');
+                        const warningText = document.getElementById('warningText');
+                        const actionButtons = document.getElementById('actionButtons');
+
+                        seal.classList.add('breaking');
+                        hintText.style.display = 'none';
+
+                        const rawText = textSpan.innerText;
+                        textSpan.innerHTML = '';
+                        const letters = rawText.split('').map(char => {
+                            const span = document.createElement('span');
+                            span.className = 'letter';
+                            span.innerHTML = char === ' ' ? '&nbsp;' : char;
+                            textSpan.appendChild(span);
+                            return span;
+                        });
+
+                        setTimeout(() => {
+                            seal.style.display = 'none';
+                            container.classList.add('visible');
+
+                            letters.forEach((letter, index) => {
+                                setTimeout(() => {
+                                    letter.classList.add('reveal');
+                                }, index * 30);
+                            });
+
+                            setTimeout(() => {
+                                warningText.style.display = 'block';
+                                actionButtons.style.display = 'flex';
+                            }, letters.length * 30 + 300);
+
+                        }, 500);
+                    }
+                </script>
             {% else %}
                 <p style="text-align:center; color:#8a7a6a; font-style:italic; margin: 30px 0;">La boîte est vide... Aucun secret n'est scellé pour le moment.</p>
                 <div style="margin-top: 25px;">
@@ -282,7 +418,6 @@ HTML_TEMPLATE = """
         {% elif view == 'admin' %}
             <label class="form-title" style="margin-bottom: 15px; display:block; text-align:center; color:#d4af37;">Espace Admin (Gestion)</label>
 
-            <!-- FORMULAIRE SPECIAL ADMIN -->
             <form action="/add_admin" method="POST" style="margin-bottom: 25px;">
                 <textarea name="content" placeholder="Déposer un secret d'Or (Créateur)..." style="height: 80px;" required></textarea>
                 <button type="submit" class="btn btn-reveal" style="width: 100%;">Sceller en Or ✨</button>
@@ -358,7 +493,6 @@ def reveal_next():
 
     if supabase:
         try:
-            # 1. Récupérer UN seul secret (le plus ancien)
             res = supabase.table('idees').select('*').limit(1).execute()
             
             if res.data and len(res.data) > 0:
@@ -366,11 +500,9 @@ def reveal_next():
                 secret_to_show = parse_single_secret(raw_item)
                 secret_id = raw_item.get('id')
 
-                # 2. Le supprimer immédiatement de la base de données (Auto-destruction)
                 if secret_id:
                     supabase.table('idees').delete().eq('id', secret_id).execute()
 
-                # 3. Compter combien il en reste
                 count_res = supabase.table('idees').select('*', count='exact').execute()
                 if count_res.count is not None:
                     remaining_secrets = count_res.count
