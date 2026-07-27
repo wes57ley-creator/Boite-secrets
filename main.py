@@ -15,7 +15,7 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print("Erreur initialisation Supabase:", e)
 
-# --- DESIGN HTML AVEC ARRIÈRE-PLAN TEXTURÉ ET SANS MASQUE SVG ---
+# --- DESIGN HTML LUXUEUX ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
@@ -28,7 +28,6 @@ HTML_TEMPLATE = """
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body {
-            /* Arrière-plan sombre élégant à texture profonde */
             background: 
                 radial-gradient(circle at center, rgba(28, 26, 26, 0.75) 0%, rgba(10, 10, 10, 0.95) 100%),
                 url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop') center/cover no-repeat fixed;
@@ -64,12 +63,12 @@ HTML_TEMPLATE = """
         
         .card {
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
             background: rgba(14, 14, 14, 0.88);
             border: 1px solid rgba(212, 175, 55, 0.3);
             border-radius: 16px;
             padding: 30px 25px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95), inset 0 0 20px rgba(212, 175, 55, 0.03);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
@@ -82,7 +81,6 @@ HTML_TEMPLATE = """
             margin-bottom: 12px;
             display: block;
             text-transform: uppercase;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
         
         textarea {
@@ -98,7 +96,6 @@ HTML_TEMPLATE = """
             font-size: 0.95em;
             resize: none;
             margin-bottom: 20px;
-            transition: all 0.3s ease;
         }
         
         textarea:focus {
@@ -154,7 +151,6 @@ HTML_TEMPLATE = """
             color: #d4af37;
             font-size: 2.8em;
             line-height: 1;
-            text-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
         }
         
         .counter-label {
@@ -174,6 +170,17 @@ HTML_TEMPLATE = """
             border-radius: 4px;
             font-style: italic;
             word-break: break-word;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delete-btn {
+            color: #e74c3c;
+            text-decoration: none;
+            font-size: 0.8em;
+            margin-left: 10px;
+            font-style: normal;
         }
     </style>
 </head>
@@ -199,11 +206,14 @@ HTML_TEMPLATE = """
                 <div class="counter-number">{{ total_secrets }}</div>
                 <div class="counter-label">Secrets Scellés</div>
             </div>
+
         {% elif view == 'secrets' %}
             <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center;">Confidences Révélées</label>
             
             {% for s in secrets %}
-                <div class="secret-item">"{{ s.content }}"</div>
+                <div class="secret-item">
+                    "{{ s.content or s.texte or s.idee or s }}"
+                </div>
             {% else %}
                 <p style="text-align:center; color:#8a7a6a; font-style:italic;">Aucun secret n'a encore été scellé...</p>
             {% endfor %}
@@ -211,21 +221,51 @@ HTML_TEMPLATE = """
             <div style="margin-top: 25px;">
                 <a href="/" class="btn btn-submit" style="width: 100%;">Déposer un secret</a>
             </div>
+
+        {% elif view == 'admin' %}
+            <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center; color:#d4af37;">Espace Admin (Gestion)</label>
+            
+            {% for s in secrets %}
+                <div class="secret-item">
+                    <span>"{{ s.content or s.texte or s.idee or s }}"</span>
+                    {% if s.id %}
+                        <a href="/delete/{{ s.id }}" class="delete-btn" onclick="return confirm('Supprimer ce secret ?')">❌</a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p style="text-align:center; color:#8a7a6a; font-style:italic;">Aucune donnée trouvée.</p>
+            {% endfor %}
+
+            <div style="margin-top: 25px;">
+                <a href="/" class="btn btn-submit" style="width: 100%;">Retour à l'accueil</a>
+            </div>
         {% endif %}
     </div>
 </body>
 </html>
 """
 
+# Helper pour récupérer le contenu quelle que soit la colonne de la table
+def extract_secrets(data):
+    clean = []
+    for item in data:
+        if isinstance(item, dict):
+            clean.append(item)
+    return clean
+
 @app.route('/')
 def home():
     total_secrets = 0
     if supabase:
         try:
-            res = supabase.table('idees').select('id', count='exact').execute()
-            total_secrets = res.count if res.count is not None else len(res.data)
+            res = supabase.table('idees').select('*', count='exact').execute()
+            if res.count is not None:
+                total_secrets = res.count
+            elif res.data:
+                total_secrets = len(res.data)
         except Exception as e:
-            print("Erreur Supabase:", e)
+            print("Erreur Supabase Home:", e)
+            
     return render_template_string(HTML_TEMPLATE, view='home', total_secrets=total_secrets)
 
 @app.route('/secrets')
@@ -233,21 +273,49 @@ def secrets():
     secrets_list = []
     if supabase:
         try:
-            res = supabase.table('idees').select('*').order('created_at', desc=True).limit(20).execute()
-            secrets_list = res.data
+            res = supabase.table('idees').select('*').limit(30).execute()
+            if res.data:
+                secrets_list = extract_secrets(res.data)
         except Exception as e:
-            print("Erreur Supabase:", e)
+            print("Erreur Supabase Secrets:", e)
+            
     return render_template_string(HTML_TEMPLATE, view='secrets', secrets=secrets_list)
+
+@app.route('/admin')
+def admin():
+    secrets_list = []
+    if supabase:
+        try:
+            res = supabase.table('idees').select('*').execute()
+            if res.data:
+                secrets_list = extract_secrets(res.data)
+        except Exception as e:
+            print("Erreur Supabase Admin:", e)
+            
+    return render_template_string(HTML_TEMPLATE, view='admin', secrets=secrets_list)
 
 @app.route('/add', methods=['POST'])
 def add_secret():
     content = request.form.get('content')
     if content and supabase:
         try:
-            supabase.table('idees').insert({'content': content}).execute()
+            # On tente d'insérer dans 'content', sinon 'texte'
+            try:
+                supabase.table('idees').insert({'content': content}).execute()
+            except:
+                supabase.table('idees').insert({'texte': content}).execute()
         except Exception as e:
             print("Erreur enregistrement:", e)
     return redirect(url_for('home'))
+
+@app.route('/delete/<int:secret_id>')
+def delete_secret(secret_id):
+    if supabase:
+        try:
+            supabase.table('idees').delete().eq('id', secret_id).execute()
+        except Exception as e:
+            print("Erreur suppression:", e)
+    return redirect(url_for('admin'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
