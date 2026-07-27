@@ -5,8 +5,8 @@ from supabase import create_client, Client
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cle_secrete_boite_secrets_999")
 
-# 🔒 VOTRE MOT DE PASSE ADMIN
-ADMIN_PASSWORD = "rouge2026"
+# 🔒 VOTRE MOT DE PASSE ADMIN RESTAURÉ
+ADMIN_PASSWORD = "Therec@nbeonly1"
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -18,7 +18,7 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print("Erreur initialisation Supabase:", e)
 
-# --- DESIGN EYES WIDE SHUT + CHÂTEAU + ANIMATION MYSTIQUE ---
+# --- DESIGN HAUTE COUTURE / MASQUERADE / RITE D'INITIATION ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
@@ -26,13 +26,13 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boîte-secrets</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Montserrat:wght@300;400;600&family=Pinyon+Script&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Montserrat:ital,wght@0,300;0,400;1,300&family=Pinyon+Script&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body {
             background: 
-                radial-gradient(circle at center, rgba(28, 26, 26, 0.75) 0%, rgba(10, 10, 10, 0.95) 100%),
+                radial-gradient(circle at center, rgba(20, 15, 15, 0.85) 0%, rgba(5, 5, 5, 0.98) 100%),
                 url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop') center/cover no-repeat fixed;
             color: #e0d0b0;
             font-family: 'Montserrat', sans-serif;
@@ -49,53 +49,57 @@ HTML_TEMPLATE = """
         h1 {
             font-family: 'Pinyon Script', cursive;
             color: #d4af37;
-            font-size: 4em;
-            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4), 0 2px 4px rgba(0, 0, 0, 0.8);
-            line-height: 1.1;
+            font-size: 4.2em;
+            text-shadow: 0 0 25px rgba(212, 175, 55, 0.5), 0 3px 6px rgba(0, 0, 0, 0.9);
+            line-height: 1;
         }
         
         .subtitle {
             font-family: 'Cinzel', serif;
             color: #b0a090;
-            font-size: 0.85em;
-            letter-spacing: 3px;
+            font-size: 0.8em;
+            letter-spacing: 5px;
             text-transform: uppercase;
-            margin-top: 5px;
+            margin-top: 8px;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
         }
         
         .card {
             width: 100%;
-            max-width: 440px;
-            background: rgba(14, 14, 14, 0.88);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            border-radius: 16px;
-            padding: 30px 25px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            max-width: 460px;
+            background: rgba(10, 8, 8, 0.94);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            border-radius: 8px;
+            padding: 35px 28px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.98), inset 0 0 0 2px rgba(212, 175, 55, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            position: relative;
         }
         
         .form-title {
-            color: #9e1b1b;
+            color: #a81c1c;
             font-family: 'Cinzel', serif;
-            font-size: 0.9em;
-            letter-spacing: 1.5px;
-            margin-bottom: 12px;
+            font-size: 0.85em;
+            letter-spacing: 2.5px;
+            margin-bottom: 15px;
             display: block;
             text-transform: uppercase;
+            text-align: center;
+            font-weight: 700;
         }
         
         textarea, input[type="password"] {
             width: 100%;
-            background: rgba(10, 10, 10, 0.9);
-            border: 1px solid rgba(212, 175, 55, 0.4);
-            border-radius: 10px;
+            background: rgba(5, 5, 5, 0.9);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 4px;
             color: #f0f0f0;
-            padding: 15px;
+            padding: 16px;
             font-family: 'Montserrat', sans-serif;
             font-size: 0.95em;
             margin-bottom: 20px;
+            transition: all 0.3s ease;
         }
         
         textarea { height: 110px; font-style: italic; resize: none; }
@@ -103,200 +107,156 @@ HTML_TEMPLATE = """
         textarea:focus, input[type="password"]:focus {
             outline: none;
             border-color: #d4af37;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.35);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
         }
         
-        .buttons-group { display: flex; gap: 12px; margin-bottom: 25px; }
+        .buttons-group { display: flex; gap: 12px; margin-bottom: 20px; }
         
         .btn {
             border: none;
-            border-radius: 8px;
-            padding: 14px 10px;
+            border-radius: 4px;
+            padding: 15px 12px;
             font-family: 'Cinzel', serif;
             font-weight: 700;
-            font-size: 0.85em;
-            letter-spacing: 1px;
+            font-size: 0.8em;
+            letter-spacing: 2px;
             cursor: pointer;
             text-decoration: none;
             display: flex;
             align-items: center;
             justify-content: center;
             text-transform: uppercase;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
         
         .btn:hover { transform: translateY(-2px); }
         
         .btn-submit {
             flex: 1.8;
-            background: linear-gradient(135deg, #7a0000 0%, #a81c1c 100%);
+            background: linear-gradient(135deg, #4a0000 0%, #730d0d 100%);
             color: #f3e5ab;
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            box-shadow: 0 4px 15px rgba(122, 0, 0, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            box-shadow: 0 4px 18px rgba(74, 0, 0, 0.7);
         }
         
         .btn-reveal {
             flex: 1.2;
-            background: linear-gradient(135deg, #c5a059 0%, #9e7d3b 100%);
+            background: linear-gradient(135deg, #b89343 0%, #8c6a23 100%);
             color: #0d0d0d;
-            box-shadow: 0 4px 15px rgba(197, 160, 89, 0.35);
+            box-shadow: 0 4px 18px rgba(184, 147, 67, 0.3);
         }
         
         .counter-box {
             text-align: center;
-            border-top: 1px solid rgba(212, 175, 55, 0.15);
+            border-top: 1px solid rgba(212, 175, 55, 0.2);
             padding-top: 20px;
         }
         
         .counter-number {
             font-family: 'Pinyon Script', cursive;
             color: #d4af37;
-            font-size: 2.8em;
+            font-size: 3em;
             line-height: 1;
         }
         
         .counter-label {
             font-family: 'Cinzel', serif;
             color: #8a7a6a;
-            font-size: 0.75em;
-            letter-spacing: 2px;
+            font-size: 0.7em;
+            letter-spacing: 2.5px;
             text-transform: uppercase;
             margin-top: 4px;
         }
 
-        .secret-item {
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            font-style: italic;
-            word-break: break-word;
+        .sanctuary-vault {
+            position: relative;
+            background: rgba(15, 12, 12, 0.95);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 6px;
+            padding: 30px 20px;
+            min-height: 140px;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             text-align: center;
-            font-size: 1.1em;
-            line-height: 1.5;
+            margin: 15px 0 20px 0;
+            overflow: hidden;
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.9);
         }
 
-        /* Vos secrets (Admin) = OR */
-        .secret-gold {
-            background: rgba(212, 175, 55, 0.12);
-            border: 1px solid rgba(212, 175, 55, 0.5);
-            color: #f3e5ab;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+        .vault-lock {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1c1515 0%, #0a0707 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
         }
 
-        /* Secrets invités = ROSE FONCÉ */
-        .secret-pink {
-            background: rgba(194, 24, 91, 0.12);
-            border: 1px solid rgba(194, 24, 91, 0.5);
-            color: #f8bbd0;
-            box-shadow: 0 0 15px rgba(194, 24, 91, 0.2);
+        .vault-lock:hover {
+            border-color: #d4af37;
+            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.2);
         }
 
-        .delete-btn {
-            color: #e74c3c;
-            text-decoration: none;
+        .lock-icon {
+            font-size: 2em;
+            color: #d4af37;
+            margin-bottom: 8px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            transition: transform 0.6s ease;
+        }
+
+        .vault-lock:hover .lock-icon {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        .lock-text {
+            font-family: 'Cinzel', serif;
             font-size: 0.8em;
-            margin-left: 10px;
-            font-style: normal;
+            letter-spacing: 3px;
+            color: #c5a059;
+            text-transform: uppercase;
         }
 
-        .error-msg {
-            color: #e74c3c;
-            text-align: center;
-            font-size: 0.85em;
-            margin-bottom: 15px;
+        .vault-lock.unlocked {
+            opacity: 0;
+            transform: translateY(-100%);
+            pointer-events: none;
         }
+
+        .secret-text-display {
+            font-size: 1.15em;
+            line-height: 1.6;
+            font-style: italic;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 1s ease 0.4s, transform 1s ease 0.4s;
+            word-break: break-word;
+        }
+
+        .secret-text-display.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .gold-glow { color: #f3e5ab; text-shadow: 0 0 12px rgba(212, 175, 55, 0.3); }
+        .pink-glow { color: #f8bbd0; text-shadow: 0 0 12px rgba(194, 24, 91, 0.4); }
 
         .warning-text {
-            color: #8a7a6a;
+            color: #7a6a5a;
             font-size: 0.75em;
             text-align: center;
-            margin-top: 10px;
+            margin-top: 15px;
             font-style: italic;
+            letter-spacing: 1px;
         }
 
-        /* --- ANIMATION DU SCEAU --- */
-        .reveal-box {
-            position: relative;
-            min-height: 120px;
-            margin: 15px 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .seal-wrapper {
-            position: absolute;
-            z-index: 2;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-        .seal-wrapper:hover { transform: scale(1.08); }
-
-        .seal {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .seal-gold {
-            background: radial-gradient(circle at 30% 30%, #f3e5ab, #d4af37, #996515);
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
-        }
-
-        .seal-pink {
-            background: radial-gradient(circle at 30% 30%, #f8bbd0, #c2185b, #6b002b);
-            box-shadow: 0 0 20px rgba(194, 24, 91, 0.6);
-        }
-
-        .seal-icon { font-size: 1.8rem; color: #0d0d0d; user-select: none; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-        }
-
-        .seal-wrapper.breaking {
-            animation: pulse-break 0.7s forwards;
-        }
-
-        @keyframes pulse-break {
-            0% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.3); filter: brightness(2); }
-            100% { transform: scale(0); opacity: 0; }
-        }
-
-        .secret-text {
-            opacity: 0;
-            visibility: hidden;
-            width: 100%;
-        }
-
-        .secret-text.visible {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .letter {
-            display: inline-block;
-            opacity: 0;
-            transform: translateY(8px);
-            filter: blur(4px);
-            transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
-        }
-
-        .letter.reveal {
-            opacity: 1;
-            transform: translateY(0);
-            filter: blur(0);
-        }
+        .delete-btn { color: #e74c3c; text-decoration: none; font-size: 0.8em; font-style: normal; }
     </style>
 </head>
 <body>
@@ -308,7 +268,7 @@ HTML_TEMPLATE = """
     <div class="card">
         {% if view == 'home' %}
             <form action="/add" method="POST">
-                <label class="form-title">Enfermez votre secret...</label>
+                <label class="form-title">Enfermez votre secret</label>
                 <textarea name="content" placeholder="Un désir, une confidence, un interdit..." required></textarea>
                 
                 <div class="buttons-group">
@@ -323,22 +283,20 @@ HTML_TEMPLATE = """
             </div>
 
         {% elif view == 'reveal' %}
-            <label class="form-title" style="margin-bottom: 10px; display:block; text-align:center;">Secret Révélé</label>
+            <label class="form-title">Secret Révélé</label>
             
-            {% if secret %}
-                <div class="reveal-box">
-                    <div class="seal-wrapper" id="sealWrapper" onclick="breakSeal()">
-                        <div class="seal {% if secret.is_admin %}seal-gold{% else %}seal-pink{% endif %}">
-                            <span class="seal-icon">✦</span>
-                        </div>
+            {% if secret and secret.clean_text %}
+                <div class="sanctuary-vault">
+                    <div class="vault-lock" id="vaultLock" onclick="unlockSecret()">
+                        <div class="lock-icon">🎭</div>
+                        <div class="lock-text">Bannir le Masque</div>
                     </div>
 
-                    <div id="secretContainer" class="secret-text secret-item {% if secret.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
-                        "<span id="secretText">{{ secret.clean_text }}</span>"
+                    <div class="secret-text-display {% if secret.is_admin %}gold-glow{% else %}pink-glow{% endif %}" id="secretText">
+                        "{{ secret.clean_text }}"
                     </div>
                 </div>
 
-                <p id="hintText" style="text-align:center; color:#d4af37; font-size:0.8em; margin-bottom:10px; cursor:pointer;" onclick="breakSeal()">👉 Touchez le sceau pour le briser...</p>
                 <p class="warning-text" id="warningText" style="display:none;">🔥 Ce secret s'est auto-détruit. Il n'existe plus.</p>
 
                 <div id="actionButtons" style="margin-top: 20px; display:none; flex-direction:column; gap:10px;">
@@ -349,61 +307,33 @@ HTML_TEMPLATE = """
                 </div>
 
                 <script>
-                    let isBroken = false;
-                    function breakSeal() {
-                        if (isBroken) return;
-                        isBroken = true;
+                    function unlockSecret() {
+                        const lock = document.getElementById('vaultLock');
+                        const text = document.getElementById('secretText');
+                        const warning = document.getElementById('warningText');
+                        const actions = document.getElementById('actionButtons');
 
-                        const seal = document.getElementById('sealWrapper');
-                        const container = document.getElementById('secretContainer');
-                        const textSpan = document.getElementById('secretText');
-                        const hintText = document.getElementById('hintText');
-                        const warningText = document.getElementById('warningText');
-                        const actionButtons = document.getElementById('actionButtons');
-
-                        seal.classList.add('breaking');
-                        hintText.style.display = 'none';
-
-                        const rawText = textSpan.innerText;
-                        textSpan.innerHTML = '';
-                        const letters = rawText.split('').map(char => {
-                            const span = document.createElement('span');
-                            span.className = 'letter';
-                            span.innerHTML = char === ' ' ? '&nbsp;' : char;
-                            textSpan.appendChild(span);
-                            return span;
-                        });
+                        lock.classList.add('unlocked');
+                        text.classList.add('visible');
 
                         setTimeout(() => {
-                            seal.style.display = 'none';
-                            container.classList.add('visible');
-
-                            letters.forEach((letter, index) => {
-                                setTimeout(() => {
-                                    letter.classList.add('reveal');
-                                }, index * 30);
-                            });
-
-                            setTimeout(() => {
-                                warningText.style.display = 'block';
-                                actionButtons.style.display = 'flex';
-                            }, letters.length * 30 + 300);
-
-                        }, 500);
+                            warning.style.display = 'block';
+                            actions.style.display = 'flex';
+                        }, 700);
                     }
                 </script>
             {% else %}
-                <p style="text-align:center; color:#8a7a6a; font-style:italic; margin: 30px 0;">La boîte est vide... Aucun secret n'est scellé pour le moment.</p>
+                <p style="text-align:center; color:#7a6a5a; font-style:italic; margin: 30px 0;">La boîte est vide... Aucun secret n'est scellé pour le moment.</p>
                 <div style="margin-top: 25px;">
                     <a href="/" class="btn btn-submit" style="width: 100%;">Déposer un secret</a>
                 </div>
             {% endif %}
 
         {% elif view == 'login' %}
-            <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center; color:#d4af37;">Accès Restreint</label>
+            <label class="form-title" style="color:#d4af37;">Accès Restreint</label>
             
             {% if error %}
-                <div class="error-msg">{{ error }}</div>
+                <div style="color:#a81c1c; text-align:center; font-size:0.85em; margin-bottom:15px;">{{ error }}</div>
             {% endif %}
 
             <form action="/admin" method="POST">
@@ -412,28 +342,28 @@ HTML_TEMPLATE = """
             </form>
 
             <div style="margin-top: 15px; text-align:center;">
-                <a href="/" style="color:#8a7a6a; text-decoration:none; font-size:0.8em;">Retour au site</a>
+                <a href="/" style="color:#7a6a5a; text-decoration:none; font-size:0.8em;">Retour au site</a>
             </div>
 
         {% elif view == 'admin' %}
-            <label class="form-title" style="margin-bottom: 15px; display:block; text-align:center; color:#d4af37;">Espace Admin (Gestion)</label>
+            <label class="form-title" style="color:#d4af37;">Espace Créateur (Gestion)</label>
 
             <form action="/add_admin" method="POST" style="margin-bottom: 25px;">
                 <textarea name="content" placeholder="Déposer un secret d'Or (Créateur)..." style="height: 80px;" required></textarea>
                 <button type="submit" class="btn btn-reveal" style="width: 100%;">Sceller en Or ✨</button>
             </form>
 
-            <p style="text-align:center; color:#8a7a6a; font-size:0.8em; margin-bottom:15px;">Secrets actuellement en attente dans la boîte :</p>
+            <p style="text-align:center; color:#7a6a5a; font-size:0.8em; margin-bottom:15px;">Secrets actuellement scellés :</p>
             
             {% for s in secrets %}
-                <div class="secret-item {% if s.is_admin %}secret-gold{% else %}secret-pink{% endif %}" style="font-size:0.9em; padding:10px;">
-                    <span>"{{ s.clean_text }}"</span>
+                <div style="padding:12px; margin-bottom:10px; border-radius:4px; font-style:italic; font-size:0.9em; display:flex; justify-content:space-between; align-items:center; background:rgba(20,15,15,0.8); border:1px solid rgba(212,175,55,0.2);">
+                    <span class="{% if s.is_admin %}gold-glow{% else %}pink-glow{% endif %}">"{{ s.clean_text }}"</span>
                     {% if s.id %}
                         <a href="/delete/{{ s.id }}" class="delete-btn" onclick="return confirm('Supprimer ce secret ?')">❌</a>
                     {% endif %}
                 </div>
             {% else %}
-                <p style="text-align:center; color:#8a7a6a; font-style:italic;">Aucune donnée trouvée.</p>
+                <p style="text-align:center; color:#7a6a5a; font-style:italic;">Aucun secret trouvé.</p>
             {% endfor %}
 
             <div style="margin-top: 25px; display:flex; gap:10px;">
