@@ -10,9 +10,12 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
 supabase: Client = None
 if SUPABASE_URL and SUPABASE_KEY:
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print("Erreur initialisation Supabase:", e)
 
-# --- DESIGN HTML ENCAPSULÉ ---
+# --- DESIGN HTML AVEC MASQUE EYES WIDE SHUT ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
@@ -34,7 +37,13 @@ HTML_TEMPLATE = """
             align-items: center;
             padding: 20px;
         }
-        .header { text-align: center; margin-bottom: 25px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .mask-icon {
+            width: 70px;
+            height: auto;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.4));
+        }
         h1 {
             font-family: 'Pinyon Script', cursive;
             color: #d4af37;
@@ -145,11 +154,16 @@ HTML_TEMPLATE = """
             margin-bottom: 15px;
             border-radius: 4px;
             font-style: italic;
+            word-break: break-word;
         }
     </style>
 </head>
 <body>
     <div class="header">
+        <!-- Icône Masque Vénitien Doré -->
+        <svg class="mask-icon" viewBox="0 0 100 50" fill="#d4af37" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50,15 C35,0 10,5 0,20 C10,35 30,35 45,25 C48,23 52,23 55,25 C70,35 90,35 100,20 C90,5 65,0 50,15 Z M25,25 C20,25 15,20 18,15 C22,12 28,18 25,25 Z M75,25 C72,18 78,12 82,15 C85,20 80,25 75,25 Z"/>
+        </svg>
         <h1>Boîte-secrets</h1>
         <div class="subtitle">Le Sanctuaire de vos Désirs</div>
     </div>
@@ -171,7 +185,7 @@ HTML_TEMPLATE = """
                 <div class="counter-label">Secrets Scellés</div>
             </div>
         {% elif view == 'secrets' %}
-            <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center;">Confidences Révelées</label>
+            <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center;">Confidences Révélées</label>
             
             {% for s in secrets %}
                 <div class="secret-item">"{{ s.content }}"</div>
@@ -193,7 +207,8 @@ def home():
     total_secrets = 0
     if supabase:
         try:
-            res = supabase.table('secrets').select('id', count='exact').execute()
+            # On cherche dans la table 'idees'
+            res = supabase.table('idees').select('id', count='exact').execute()
             total_secrets = res.count if res.count is not None else len(res.data)
         except Exception as e:
             print("Erreur Supabase:", e)
@@ -204,7 +219,8 @@ def secrets():
     secrets_list = []
     if supabase:
         try:
-            res = supabase.table('secrets').select('*').order('created_at', desc=True).limit(20).execute()
+            # On cherche dans la table 'idees'
+            res = supabase.table('idees').select('*').order('created_at', desc=True).limit(20).execute()
             secrets_list = res.data
         except Exception as e:
             print("Erreur Supabase:", e)
@@ -215,7 +231,8 @@ def add_secret():
     content = request.form.get('content')
     if content and supabase:
         try:
-            supabase.table('secrets').insert({'content': content}).execute()
+            # On enregistre dans la table 'idees'
+            supabase.table('idees').insert({'content': content}).execute()
         except Exception as e:
             print("Erreur enregistrement:", e)
     return redirect(url_for('home'))
