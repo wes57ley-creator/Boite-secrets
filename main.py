@@ -1,8 +1,13 @@
 import os
-from flask import Flask, request, redirect, url_for, render_template_string
+from flask import Flask, request, redirect, url_for, render_template_string, session
 from supabase import create_client, Client
 
 app = Flask(__name__)
+# Clé secrète pour gérer les sessions de connexion
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cle_secrete_boite_secrets_999")
+
+# 🔒 VOTRE MOT DE PASSE ADMIN (Modifiez 'rouge2026' par ce que vous voulez)
+ADMIN_PASSWORD = "Therec@nbeonly1"
 
 # Configuration Supabase via variables d'environnement
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -83,22 +88,21 @@ HTML_TEMPLATE = """
             text-transform: uppercase;
         }
         
-        textarea {
+        textarea, input[type="password"] {
             width: 100%;
-            height: 110px;
             background: rgba(10, 10, 10, 0.9);
             border: 1px solid rgba(212, 175, 55, 0.4);
             border-radius: 10px;
             color: #f0f0f0;
             padding: 15px;
             font-family: 'Montserrat', sans-serif;
-            font-style: italic;
             font-size: 0.95em;
-            resize: none;
             margin-bottom: 20px;
         }
         
-        textarea:focus {
+        textarea { height: 110px; font-style: italic; resize: none; }
+        
+        textarea:focus, input[type="password"]:focus {
             outline: none;
             border-color: #d4af37;
             box-shadow: 0 0 15px rgba(212, 175, 55, 0.35);
@@ -182,6 +186,13 @@ HTML_TEMPLATE = """
             margin-left: 10px;
             font-style: normal;
         }
+
+        .error-msg {
+            color: #e74c3c;
+            text-align: center;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -222,6 +233,22 @@ HTML_TEMPLATE = """
                 <a href="/" class="btn btn-submit" style="width: 100%;">Déposer un secret</a>
             </div>
 
+        {% elif view == 'login' %}
+            <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center; color:#d4af37;">Accès Restreint</label>
+            
+            {% if error %}
+                <div class="error-msg">{{ error }}</div>
+            {% endif %}
+
+            <form action="/admin" method="POST">
+                <input type="password" name="password" placeholder="Mot de passe secret..." required>
+                <button type="submit" class="btn btn-submit" style="width: 100%;">Entrer 🗝️</button>
+            </form>
+
+            <div style="margin-top: 15px; text-align:center;">
+                <a href="/" style="color:#8a7a6a; text-decoration:none; font-size:0.8em;">Retour au site</a>
+            </div>
+
         {% elif view == 'admin' %}
             <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center; color:#d4af37;">Espace Admin (Gestion)</label>
             
@@ -236,8 +263,9 @@ HTML_TEMPLATE = """
                 <p style="text-align:center; color:#8a7a6a; font-style:italic;">Aucune donnée trouvée.</p>
             {% endfor %}
 
-            <div style="margin-top: 25px;">
-                <a href="/" class="btn btn-submit" style="width: 100%;">Retour à l'accueil</a>
+            <div style="margin-top: 25px; display:flex; gap:10px;">
+                <a href="/" class="btn btn-submit" style="flex:1;">Accueil</a>
+                <a href="/logout" class="btn btn-reveal" style="flex:1;">Déconnexion</a>
             </div>
         {% endif %}
     </div>
@@ -245,7 +273,6 @@ HTML_TEMPLATE = """
 </html>
 """
 
-# Helper pour récupérer le contenu quelle que soit la colonne de la table
 def extract_secrets(data):
     clean = []
     for item in data:
@@ -281,8 +308,21 @@ def secrets():
             
     return render_template_string(HTML_TEMPLATE, view='secrets', secrets=secrets_list)
 
-@app.route('/admin')
+@app.route('/admin', methods=['GET', 'POST'])
 def admin():
+    error = None
+    if request.method == 'POST':
+        pwd = request.form.get('password')
+        if pwd == ADMIN_PASSWORD:
+            session['logged_in'] = True
+        else:
+            error = "Mot de passe incorrect 🤫"
+
+    # Si non connecté, afficher le formulaire de connexion
+    if not session.get('logged_in'):
+        return render_template_string(HTML_TEMPLATE, view='login', error=error)
+
+    # Si connecté, récupérer les secrets
     secrets_list = []
     if supabase:
         try:
@@ -294,12 +334,16 @@ def admin():
             
     return render_template_string(HTML_TEMPLATE, view='admin', secrets=secrets_list)
 
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('home'))
+
 @app.route('/add', methods=['POST'])
 def add_secret():
     content = request.form.get('content')
     if content and supabase:
         try:
-            # On tente d'insérer dans 'content', sinon 'texte'
             try:
                 supabase.table('idees').insert({'content': content}).execute()
             except:
@@ -310,7 +354,7 @@ def add_secret():
 
 @app.route('/delete/<int:secret_id>')
 def delete_secret(secret_id):
-    if supabase:
+    if session.get('logged_in') and supabase:
         try:
             supabase.table('idees').delete().eq('id', secret_id).execute()
         except Exception as e:
