@@ -314,7 +314,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="header">
         <h1>Boîte-secrets</h1>
-        <div class="subtitle">Le Sanctuaire de vos Confidences</div>
+        <div class="subtitle">Le Sanctuaire de nos Confidences</div>
     </div>
 
     <div class="card">
