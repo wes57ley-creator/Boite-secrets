@@ -18,7 +18,7 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print("Erreur initialisation Supabase:", e)
 
-# --- DESIGN CINÉMATIQUE AVEC EFFET DE FUMÉE ÉVOLUTIF ---
+# --- DESIGN HAUTE COUTURE / SCEAU EN RELIEF & EFFETS DE FEU/LIQUIDE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
@@ -33,7 +33,7 @@ HTML_TEMPLATE = """
         body {
             background: #070606;
             background-image: 
-                radial-gradient(circle at 50% 30%, rgba(35, 15, 18, 0.5) 0%, rgba(5, 5, 5, 0.98) 80%),
+                radial-gradient(circle at 50% 30%, rgba(35, 15, 18, 0.6) 0%, rgba(5, 5, 5, 0.98) 80%),
                 url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop');
             background-size: cover;
             background-position: center;
@@ -181,10 +181,10 @@ HTML_TEMPLATE = """
             margin-top: 6px;
         }
 
-        /* --- SANCTUAIRE & CANVAS FUMÉE --- */
+        /* --- SANCTUAIRE & SCEAU EN RELIEF --- */
         .sanctuary-container {
             position: relative;
-            min-height: 230px;
+            min-height: 240px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -192,12 +192,9 @@ HTML_TEMPLATE = """
             margin: 20px 0;
         }
 
-        canvas#smokeCanvas {
+        canvas#particleCanvas {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             z-index: 15;
         }
@@ -211,24 +208,22 @@ HTML_TEMPLATE = """
             align-items: center;
             cursor: pointer;
             z-index: 20;
-            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease;
         }
 
-        .seal-svg-wrapper {
+        .seal-3d-wrapper {
             position: relative;
-            width: 100px;
-            height: 100px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.9)) drop-shadow(0 0 15px rgba(212,175,55,0.2));
+            transition: transform 0.2s ease, filter 0.2s ease;
         }
 
-        .progress-ring-circle {
-            stroke-dasharray: 283;
-            stroke-dashoffset: 283;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
-            transition: stroke-dashoffset 0.1s linear;
+        .hold-seal-area:active .seal-3d-wrapper,
+        .hold-seal-area.holding .seal-3d-wrapper {
+            transform: scale(1.05);
+            filter: drop-shadow(0 18px 30px rgba(0,0,0,0.95)) drop-shadow(0 0 25px rgba(255,100,0,0.4));
         }
 
         .seal-instructions {
@@ -237,13 +232,13 @@ HTML_TEMPLATE = """
             letter-spacing: 3px;
             color: #8c7e6c;
             text-transform: uppercase;
-            margin-top: 20px;
+            margin-top: 22px;
             transition: color 0.4s ease, transform 0.4s ease;
         }
 
         .hold-seal-area.holding .seal-instructions {
-            color: #d4af37;
-            transform: scale(1.03);
+            color: #e6b800;
+            text-shadow: 0 0 10px rgba(230,184,0,0.5);
         }
 
         /* Conteneur de Texte Révélé */
@@ -251,8 +246,8 @@ HTML_TEMPLATE = """
             width: 100%;
             text-align: center;
             opacity: 0;
-            filter: blur(12px);
-            transform: scale(0.96);
+            filter: blur(14px);
+            transform: scale(0.95);
             transition: opacity 1.6s cubic-bezier(0.16, 1, 0.3, 1), 
                         filter 1.6s cubic-bezier(0.16, 1, 0.3, 1), 
                         transform 1.6s cubic-bezier(0.16, 1, 0.3, 1);
@@ -318,20 +313,65 @@ HTML_TEMPLATE = """
             {% if secret and secret.clean_text %}
                 <div class="sanctuary-container">
                     
-                    <!-- CANVAS DE FUMÉE SOMBRE & DORÉE -->
-                    <canvas id="smokeCanvas"></canvas>
+                    <!-- PARTICULES EN TEMPS RÉEL (FEU & FUMÉE) -->
+                    <canvas id="particleCanvas"></canvas>
 
-                    <!-- SCEAU TACTILE (PRESS & HOLD) -->
+                    <!-- SCEAU EN RELIEF VECTORIEL (3D SVG) -->
                     <div class="hold-seal-area" id="sealArea">
-                        <div class="seal-svg-wrapper">
-                            <svg width="100" height="100" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(212,175,55,0.15)" stroke-width="2"/>
-                                <circle id="progressCircle" class="progress-ring-circle" cx="50" cy="50" r="45" fill="none" stroke="#d4af37" stroke-width="2.5"/>
-                                <polygon points="50,28 60,42 76,50 60,58 50,72 40,58 24,50 40,42" fill="none" stroke="#d4af37" stroke-width="1.2" opacity="0.8"/>
-                                <circle cx="50" cy="50" r="4" fill="#d4af37"/>
+                        <div class="seal-3d-wrapper">
+                            <svg width="120" height="120" viewBox="0 0 120 120">
+                                <defs>
+                                    <!-- Ombre & relief or métallique -->
+                                    <radialGradient id="goldPlate" cx="35%" cy="30%" r="70%">
+                                        <stop offset="0%" stop-color="#fff2c2"/>
+                                        <stop offset="30%" stop-color="#d4af37"/>
+                                        <stop offset="70%" stop-color="#7a5c1b"/>
+                                        <stop offset="100%" stop-color="#2a1e05"/>
+                                    </radialGradient>
+
+                                    <!-- Liquide magmatique / rubis -->
+                                    <linearGradient id="liquidGrad" x1="0" y1="1" x2="0" y2="0">
+                                        <stop offset="0%" stop-color="#990000"/>
+                                        <stop offset="60%" stop-color="#ff4500"/>
+                                        <stop offset="100%" stop-color="#ffcc00"/>
+                                    </linearGradient>
+
+                                    <!-- Masque de remplissage liquide -->
+                                    <clipPath id="liquidClip">
+                                        <rect id="liquidRect" x="0" y="120" width="120" height="120"/>
+                                    </clipPath>
+
+                                    <!-- Glow incandescence -->
+                                    <filter id="glow">
+                                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                                        <feMerge>
+                                            <feMergeNode in="coloredBlur"/>
+                                            <feMergeNode in="SourceGraphic"/>
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+
+                                <!-- Base de la pièce (Or sculpté) -->
+                                <circle cx="60" cy="60" r="54" fill="url(#goldPlate)" stroke="#1a1203" stroke-width="3"/>
+                                <circle cx="60" cy="60" r="47" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+                                <circle cx="60" cy="60" r="45" fill="#0d0907" stroke="#3d2c0d" stroke-width="2"/>
+
+                                <!-- Reservoir de Liquide (Monte au maintien) -->
+                                <circle cx="60" cy="60" r="44" fill="url(#liquidGrad)" clip-path="url(#liquidClip)" opacity="0.9"/>
+
+                                <!-- Fissures / Craquelures (S'illuminent à 50%+) -->
+                                <g id="cracksGroup" opacity="0" filter="url(#glow)">
+                                    <path d="M60 20 L55 40 L65 55 L50 75 L60 100" stroke="#ffeb3b" stroke-width="2" fill="none"/>
+                                    <path d="M65 55 L85 50 L100 65" stroke="#ff9800" stroke-width="1.5" fill="none"/>
+                                    <path d="M55 40 L30 35 L20 50" stroke="#ff5722" stroke-width="1.5" fill="none"/>
+                                </g>
+
+                                <!-- Gravure Centrale (Sceau) -->
+                                <polygon points="60,32 72,48 90,58 72,68 60,84 48,68 30,58 48,48" fill="none" stroke="#d4af37" stroke-width="1.8" opacity="0.9"/>
+                                <circle cx="60" cy="58" r="5" fill="#d4af37"/>
                             </svg>
                         </div>
-                        <div class="seal-instructions" id="sealInstruction">Maintenir pour briser le sceau</div>
+                        <div class="seal-instructions" id="sealInstruction">Maintenir pour rompre le sceau</div>
                     </div>
 
                     <!-- TEXTE RÉVÉLÉ -->
@@ -355,21 +395,21 @@ HTML_TEMPLATE = """
 
                 <script>
                     const sealArea = document.getElementById('sealArea');
-                    const progressCircle = document.getElementById('progressCircle');
-                    const instruction = document.getElementById('sealInstruction');
+                    const sealInstruction = document.getElementById('sealInstruction');
+                    const liquidRect = document.getElementById('liquidRect');
+                    const cracksGroup = document.getElementById('cracksGroup');
                     const revealedBox = document.getElementById('revealedBox');
                     const warningNotice = document.getElementById('warningNotice');
                     const actionControls = document.getElementById('actionControls');
-                    const canvas = document.getElementById('smokeCanvas');
+                    const canvas = document.getElementById('particleCanvas');
                     const ctx = canvas.getContext('2d');
 
                     let timer = null;
                     let startTime = 0;
-                    const DURATION = 2200; // 2.2 secondes
-                    const circumference = 2 * Math.PI * 45;
+                    const DURATION = 2400; // 2.4 secondes
                     let isHolding = false;
+                    let currentProgress = 0;
 
-                    // Ajuster le canvas à son conteneur
                     function resizeCanvas() {
                         canvas.width = canvas.offsetWidth;
                         canvas.height = canvas.offsetHeight;
@@ -377,29 +417,39 @@ HTML_TEMPLATE = """
                     resizeCanvas();
                     window.addEventListener('resize', resizeCanvas);
 
-                    // --- MOTEUR DE PARTICULES DE FUMÉE ---
+                    // --- PARTICULES : FUMÉE & ÉTINCELLES INCANDESCENTES ---
                     let particles = [];
 
                     class Particle {
-                        constructor(x, y, isBurst = false) {
-                            this.x = x || canvas.width / 2 + (Math.random() - 0.5) * 30;
-                            this.y = y || canvas.height / 2 + (Math.random() - 0.5) * 30;
-                            this.radius = isBurst ? Math.random() * 25 + 15 : Math.random() * 15 + 8;
-                            this.maxRadius = this.radius + (Math.random() * 30 + 20);
-                            this.vx = (Math.random() - 0.5) * (isBurst ? 2.5 : 0.8);
-                            this.vy = isBurst ? -(Math.random() * 2 + 1) : -(Math.random() * 1 + 0.3);
-                            this.alpha = isBurst ? Math.random() * 0.4 + 0.3 : Math.random() * 0.25 + 0.1;
-                            this.decay = Math.random() * 0.005 + 0.003;
-                            
-                            // Teintes de fumée : mélange de gris sombre et d'or très léger
-                            const isGold = Math.random() > 0.7;
-                            this.color = isGold ? '212, 175, 55' : '120, 105, 95';
+                        constructor(x, y, type = 'smoke') {
+                            this.x = x || canvas.width / 2 + (Math.random() - 0.5) * 20;
+                            this.y = y || canvas.height / 2 + (Math.random() - 0.5) * 20;
+                            this.type = type; // 'smoke' ou 'ember'
+
+                            if (type === 'ember') {
+                                this.radius = Math.random() * 2.5 + 1;
+                                this.vx = (Math.random() - 0.5) * 3;
+                                this.vy = -(Math.random() * 3 + 1);
+                                this.alpha = 1;
+                                this.decay = Math.random() * 0.03 + 0.015;
+                                this.color = Math.random() > 0.5 ? '255, 200, 50' : '255, 80, 20';
+                            } else {
+                                this.radius = Math.random() * 12 + 6;
+                                this.maxRadius = this.radius + 35;
+                                this.vx = (Math.random() - 0.5) * 1.2;
+                                this.vy = -(Math.random() * 1.5 + 0.5);
+                                this.alpha = Math.random() * 0.35 + 0.15;
+                                this.decay = Math.random() * 0.005 + 0.003;
+                                this.color = Math.random() > 0.6 ? '212, 175, 55' : '100, 85, 75';
+                            }
                         }
 
                         update() {
                             this.x += this.vx;
                             this.y += this.vy;
-                            if (this.radius < this.maxRadius) this.radius += 0.3;
+                            if (this.type === 'smoke' && this.radius < this.maxRadius) {
+                                this.radius += 0.4;
+                            }
                             this.alpha -= this.decay;
                         }
 
@@ -407,24 +457,34 @@ HTML_TEMPLATE = """
                             if (this.alpha <= 0) return;
                             ctx.save();
                             ctx.beginPath();
-                            let gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
-                            gradient.addColorStop(0, `rgba(${this.color}, ${this.alpha})`);
-                            gradient.addColorStop(0.6, `rgba(${this.color}, ${this.alpha * 0.4})`);
-                            gradient.addColorStop(1, `rgba(${this.color}, 0)`);
-                            ctx.fillStyle = gradient;
-                            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                            ctx.fill();
+                            if (this.type === 'ember') {
+                                ctx.shadowBlur = 8;
+                                ctx.shadowColor = `rgba(${this.color}, 0.8)`;
+                                ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+                                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                                ctx.fill();
+                            } else {
+                                let grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                                grad.addColorStop(0, `rgba(${this.color}, ${this.alpha})`);
+                                grad.addColorStop(0.7, `rgba(${this.color}, ${this.alpha * 0.3})`);
+                                grad.addColorStop(1, `rgba(${this.color}, 0)`);
+                                ctx.fillStyle = grad;
+                                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
                             ctx.restore();
                         }
                     }
 
-                    function animateSmoke() {
+                    function renderParticles() {
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                        // Si la pression est active, générer de la fumée en continu
                         if (isHolding) {
-                            for (let i = 0; i < 2; i++) {
-                                particles.push(new Particle());
+                            // Fumée légère continue
+                            particles.push(new Particle(null, null, 'smoke'));
+                            // Étincelles si la pression dépasse 40%
+                            if (currentProgress > 0.4 && Math.random() > 0.3) {
+                                particles.push(new Particle(null, null, 'ember'));
                             }
                         }
 
@@ -436,34 +496,43 @@ HTML_TEMPLATE = """
                             }
                         }
 
-                        requestAnimationFrame(animateSmoke);
+                        requestAnimationFrame(renderParticles);
                     }
-                    animateSmoke();
+                    renderParticles();
 
-                    function burstSmoke() {
-                        // Explosion de fumée intense au déverrouillage
-                        for (let i = 0; i < 45; i++) {
-                            particles.push(new Particle(canvas.width / 2, canvas.height / 2, true));
-                        }
+                    function triggerExplosion() {
+                        // Explosion massive d'étincelles & fumée dense à la rupture
+                        for (let i = 0; i < 40; i++) particles.push(new Particle(canvas.width / 2, canvas.height / 2, 'ember'));
+                        for (let i = 0; i < 30; i++) particles.push(new Particle(canvas.width / 2, canvas.height / 2, 'smoke'));
                     }
 
-                    // --- LOGIQUE DE MAINTIEN ---
+                    // --- LOGIQUE DE MAINTIEN & DE LIQUIDE ---
                     function startHold(e) {
                         e.preventDefault();
                         if (sealArea.style.pointerEvents === 'none') return;
 
                         isHolding = true;
                         startTime = Date.now();
-                        instruction.textContent = "Dissolution du sceau...";
+                        sealInstruction.textContent = "Fusion en cours...";
                         sealArea.classList.add('holding');
 
                         timer = setInterval(() => {
                             const elapsed = Date.now() - startTime;
-                            const progress = Math.min(elapsed / DURATION, 1);
-                            const offset = circumference - (progress * circumference);
-                            progressCircle.style.strokeDashoffset = offset;
+                            currentProgress = Math.min(elapsed / DURATION, 1);
 
-                            if (progress >= 1) {
+                            // 1. Remplissage du liquide (120px -> 0px)
+                            const liquidY = 120 - (currentProgress * 120);
+                            liquidRect.setAttribute('y', liquidY);
+
+                            // 2. Fissures lumineuses après 50% de progression
+                            if (currentProgress > 0.5) {
+                                const crackOpacity = (currentProgress - 0.5) * 2;
+                                cracksGroup.setAttribute('opacity', crackOpacity);
+                            } else {
+                                cracksGroup.setAttribute('opacity', 0);
+                            }
+
+                            if (currentProgress >= 1) {
                                 completeReveal();
                             }
                         }, 20);
@@ -472,9 +541,13 @@ HTML_TEMPLATE = """
                     function cancelHold() {
                         if (sealArea.style.pointerEvents === 'none') return;
                         isHolding = false;
+                        currentProgress = 0;
                         clearInterval(timer);
-                        progressCircle.style.strokeDashoffset = circumference;
-                        instruction.textContent = "Maintenir pour briser le sceau";
+                        
+                        // Réinitialiser les visuels
+                        liquidRect.setAttribute('y', 120);
+                        cracksGroup.setAttribute('opacity', 0);
+                        sealInstruction.textContent = "Maintenir pour rompre le sceau";
                         sealArea.classList.remove('holding');
                     }
 
@@ -484,15 +557,15 @@ HTML_TEMPLATE = """
                         sealArea.style.pointerEvents = 'none';
                         sealArea.style.opacity = '0';
 
-                        // Déclencher le nuage de fumée
-                        burstSmoke();
+                        // Déclencher le brasier & la brume
+                        triggerExplosion();
 
                         setTimeout(() => {
                             sealArea.style.display = 'none';
                             revealedBox.classList.add('visible');
                             warningNotice.style.opacity = '1';
                             actionControls.style.display = 'flex';
-                        }, 500);
+                        }, 600);
                     }
 
                     sealArea.addEventListener('mousedown', startHold);
