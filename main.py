@@ -3,13 +3,11 @@ from flask import Flask, request, redirect, url_for, render_template_string, ses
 from supabase import create_client, Client
 
 app = Flask(__name__)
-# Clé secrète pour gérer les sessions de connexion
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cle_secrete_boite_secrets_999")
 
-# 🔒 VOTRE MOT DE PASSE ADMIN (Modifiez 'rouge2026' par ce que vous voulez)
-ADMIN_PASSWORD = "Therec@nbeonly1"
+# 🔒 VOTRE MOT DE PASSE ADMIN
+ADMIN_PASSWORD = "rouge2026"
 
-# Configuration Supabase via variables d'environnement
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
@@ -165,18 +163,34 @@ HTML_TEMPLATE = """
             text-transform: uppercase;
             margin-top: 4px;
         }
-        
+
+        /* --- STYLES DES SECRETS (OR vs ROSE FONCÉ) --- */
         .secret-item {
-            background: rgba(255, 255, 255, 0.03);
-            border-left: 2px solid #d4af37;
             padding: 15px;
             margin-bottom: 15px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-style: italic;
             word-break: break-word;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Vos secrets (Page Admin) = OR ELEGANT */
+        .secret-gold {
+            background: rgba(212, 175, 55, 0.08);
+            border-left: 3px solid #d4af37;
+            color: #f3e5ab;
+            box-shadow: 0 2px 10px rgba(212, 175, 55, 0.15);
+        }
+
+        /* Secrets des invités (Page Accueil) = ROSE FONCÉ / RUBIS */
+        .secret-pink {
+            background: rgba(194, 24, 91, 0.08);
+            border-left: 3px solid #c2185b;
+            color: #f8bbd0;
+            box-shadow: 0 2px 10px rgba(194, 24, 91, 0.15);
         }
 
         .delete-btn {
@@ -204,6 +218,7 @@ HTML_TEMPLATE = """
     <div class="card">
         {% if view == 'home' %}
             <form action="/add" method="POST">
+                <input type="hidden" name="is_admin" value="false">
                 <label class="form-title">Enfermez votre secret...</label>
                 <textarea name="content" placeholder="Un désir, une confidence, un interdit..." required></textarea>
                 
@@ -222,7 +237,7 @@ HTML_TEMPLATE = """
             <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center;">Confidences Révélées</label>
             
             {% for s in secrets %}
-                <div class="secret-item">
+                <div class="secret-item {% if s.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
                     "{{ s.content or s.texte or s.idee or s }}"
                 </div>
             {% else %}
@@ -250,10 +265,17 @@ HTML_TEMPLATE = """
             </div>
 
         {% elif view == 'admin' %}
-            <label class="form-title" style="margin-bottom: 20px; display:block; text-align:center; color:#d4af37;">Espace Admin (Gestion)</label>
+            <label class="form-title" style="margin-bottom: 15px; display:block; text-align:center; color:#d4af37;">Espace Admin (Gestion)</label>
+
+            <!-- FORMULAIRE SPECIAL ADMIN POUR VOS SECRETS DORÉS -->
+            <form action="/add" method="POST" style="margin-bottom: 25px;">
+                <input type="hidden" name="is_admin" value="true">
+                <textarea name="content" placeholder="Déposer un secret d'Or (Admin)..." style="height: 80px;" required></textarea>
+                <button type="submit" class="btn btn-reveal" style="width: 100%;">Sceller en Or ✨</button>
+            </form>
             
             {% for s in secrets %}
-                <div class="secret-item">
+                <div class="secret-item {% if s.is_admin %}secret-gold{% else %}secret-pink{% endif %}">
                     <span>"{{ s.content or s.texte or s.idee or s }}"</span>
                     {% if s.id %}
                         <a href="/delete/{{ s.id }}" class="delete-btn" onclick="return confirm('Supprimer ce secret ?')">❌</a>
@@ -318,11 +340,9 @@ def admin():
         else:
             error = "Mot de passe incorrect 🤫"
 
-    # Si non connecté, afficher le formulaire de connexion
     if not session.get('logged_in'):
         return render_template_string(HTML_TEMPLATE, view='login', error=error)
 
-    # Si connecté, récupérer les secrets
     secrets_list = []
     if supabase:
         try:
@@ -342,14 +362,23 @@ def logout():
 @app.route('/add', methods=['POST'])
 def add_secret():
     content = request.form.get('content')
+    is_admin_str = request.form.get('is_admin', 'false')
+    is_admin = True if is_admin_str == 'true' else False
+
     if content and supabase:
+        data_to_insert = {'content': content, 'is_admin': is_admin}
         try:
             try:
-                supabase.table('idees').insert({'content': content}).execute()
+                supabase.table('idees').insert(data_to_insert).execute()
             except:
-                supabase.table('idees').insert({'texte': content}).execute()
+                # Si le champ content s'appelle 'texte'
+                supabase.table('idees').insert({'texte': content, 'is_admin': is_admin}).execute()
         except Exception as e:
             print("Erreur enregistrement:", e)
+
+    # Rediriger vers l'admin si l'envoi vient de l'admin, sinon vers l'accueil
+    if is_admin:
+        return redirect(url_for('admin'))
     return redirect(url_for('home'))
 
 @app.route('/delete/<int:secret_id>')
