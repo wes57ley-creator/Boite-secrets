@@ -18,22 +18,22 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print("Erreur initialisation Supabase:", e)
 
-# --- DESIGN HAUTE COUTURE / SCEAU 3D INTERACTIF & PARTICULES ---
+# --- DESIGN HAUTE COUTURE / FOND ÉCLAIRCI & NOUVEAU TITRE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boîte-secrets</title>
+    <title>La boîte à secrets</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         
         body {
-            background: #070606;
+            background: #0f0c0b;
             background-image: 
-                radial-gradient(circle at 50% 30%, rgba(35, 15, 18, 0.6) 0%, rgba(5, 5, 5, 0.98) 80%),
+                radial-gradient(circle at 50% 30%, rgba(45, 25, 20, 0.25) 0%, rgba(12, 10, 10, 0.68) 85%),
                 url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop');
             background-size: cover;
             background-position: center;
@@ -73,13 +73,13 @@ HTML_TEMPLATE = """
         .card {
             width: 100%;
             max-width: 480px;
-            background: rgba(12, 10, 10, 0.88);
+            background: rgba(14, 11, 11, 0.85);
             border: 1px solid rgba(212, 175, 55, 0.25);
             border-radius: 4px;
             padding: 40px 32px;
-            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.95), inset 0 0 0 1px rgba(212, 175, 55, 0.08);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.85), inset 0 0 0 1px rgba(212, 175, 55, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             position: relative;
             overflow: hidden;
         }
@@ -190,7 +190,7 @@ HTML_TEMPLATE = """
             justify-content: center;
             align-items: center;
             margin: 20px 0;
-            perspective: 1000px; /* Activer la profondeur 3D */
+            perspective: 1000px;
         }
 
         canvas#particleCanvas {
@@ -212,7 +212,6 @@ HTML_TEMPLATE = """
             transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* ENSEMBLE DU SCEAU EN REAL 3D CSS */
         .seal-3d-stage {
             position: relative;
             width: 130px;
@@ -221,7 +220,6 @@ HTML_TEMPLATE = """
             transition: transform 0.15s ease-out;
         }
 
-        /* Tranche/Épaisseur de la pièce (Arrière 3D) */
         .seal-3d-stage::before {
             content: '';
             position: absolute;
@@ -232,7 +230,6 @@ HTML_TEMPLATE = """
             box-shadow: 0 25px 35px rgba(0, 0, 0, 0.95), 0 0 20px rgba(212, 175, 55, 0.2);
         }
 
-        /* Corps SVG Principal (Niveau 0) */
         .seal-svg-main {
             position: relative;
             width: 100%;
@@ -242,7 +239,6 @@ HTML_TEMPLATE = """
             filter: drop-shadow(0 10px 15px rgba(0,0,0,0.8));
         }
 
-        /* Emblème Gravé Flottant au-dessus (Relief Proéminent +20px) */
         .seal-floating-emblem {
             position: absolute;
             top: 50%; left: 50%;
@@ -268,7 +264,6 @@ HTML_TEMPLATE = """
             text-shadow: 0 0 12px rgba(255, 170, 0, 0.6);
         }
 
-        /* Conteneur de Texte Révélé */
         .revealed-text-box {
             width: 100%;
             text-align: center;
@@ -313,8 +308,8 @@ HTML_TEMPLATE = """
 </head>
 <body>
     <div class="header">
-        <h1>Boîte-secrets</h1>
-        <div class="subtitle">Le Sanctuaire de nos Confidences</div>
+        <h1>La boîte à secrets</h1>
+        <div class="subtitle">Le Sanctuaire de vos Confidences</div>
     </div>
 
     <div class="card">
@@ -339,15 +334,11 @@ HTML_TEMPLATE = """
             
             {% if secret and secret.clean_text %}
                 <div class="sanctuary-container">
-                    
-                    <!-- CANVA PARTICULES EN TEMPS RÉEL -->
                     <canvas id="particleCanvas"></canvas>
 
-                    <!-- SCEAU AVEC EFFET 3D PARALLAXE -->
                     <div class="hold-seal-area" id="sealArea">
                         <div class="seal-3d-stage" id="sealStage">
                             
-                            <!-- SOCLE BASE VECTORIEL -->
                             <svg class="seal-svg-main" viewBox="0 0 130 130">
                                 <defs>
                                     <radialGradient id="goldPlate" cx="35%" cy="30%" r="70%">
@@ -376,15 +367,12 @@ HTML_TEMPLATE = """
                                     </filter>
                                 </defs>
 
-                                <!-- Pièce d'Or sculptée -->
                                 <circle cx="65" cy="65" r="58" fill="url(#goldPlate)" stroke="#1a1203" stroke-width="3"/>
                                 <circle cx="65" cy="65" r="50" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
                                 <circle cx="65" cy="65" r="48" fill="#0c0806" stroke="#4a3610" stroke-width="2"/>
 
-                                <!-- Reservoir de Liquide Magmatique -->
                                 <circle cx="65" cy="65" r="47" fill="url(#liquidGrad)" clip-path="url(#liquidClip)" opacity="0.92"/>
 
-                                <!-- Fissures / Incandescence -->
                                 <g id="cracksGroup" opacity="0" filter="url(#glow)">
                                     <path d="M65 22 L60 42 L70 58 L52 80 L65 108" stroke="#ffeb3b" stroke-width="2.5" fill="none"/>
                                     <path d="M70 58 L92 52 L108 68" stroke="#ff9800" stroke-width="2" fill="none"/>
@@ -392,7 +380,6 @@ HTML_TEMPLATE = """
                                 </g>
                             </svg>
 
-                            <!-- EMBLEM FLOTTANT EN HAUTEUR 3D -->
                             <svg class="seal-floating-emblem" viewBox="0 0 60 60">
                                 <polygon points="30,5 38,20 55,30 38,40 30,55 22,40 5,30 22,20" fill="none" stroke="#fceabb" stroke-width="2" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.8))"/>
                                 <circle cx="30" cy="30" r="5" fill="#fceabb"/>
@@ -402,7 +389,6 @@ HTML_TEMPLATE = """
                         <div class="seal-instructions" id="sealInstruction">Maintenir pour rompre le sceau</div>
                     </div>
 
-                    <!-- TEXTE RÉVÉLÉ -->
                     <div class="revealed-text-box" id="revealedBox">
                         <div class="secret-quote {% if secret.is_admin %}gold-secret{% else %}pink-secret{% endif %}">
                             « {{ secret.clean_text }} »
@@ -435,7 +421,7 @@ HTML_TEMPLATE = """
 
                     let timer = null;
                     let startTime = 0;
-                    const DURATION = 2400; // 2.4s
+                    const DURATION = 2400;
                     let isHolding = false;
                     let currentProgress = 0;
 
@@ -446,7 +432,6 @@ HTML_TEMPLATE = """
                     resizeCanvas();
                     window.addEventListener('resize', resizeCanvas);
 
-                    // --- PARALLAXE 3D INTERACTIF À LA SOURIS / TOUCHER ---
                     function handle3DTilt(e) {
                         if (isHolding || sealArea.style.pointerEvents === 'none') return;
 
@@ -457,7 +442,6 @@ HTML_TEMPLATE = """
                         const x = clientX - rect.left - rect.width / 2;
                         const y = clientY - rect.top - rect.height / 2;
 
-                        // Angle de rotation max 25 deg
                         const tiltX = (y / (rect.height / 2)) * -25;
                         const tiltY = (x / (rect.width / 2)) * 25;
 
@@ -474,7 +458,6 @@ HTML_TEMPLATE = """
                     sealArea.addEventListener('mouseleave', reset3DTilt);
                     sealArea.addEventListener('touchmove', handle3DTilt, {passive: true});
 
-                    // --- PARTICULES (FUMÉE & ÉTINCELLES INCANDESCENTES) ---
                     let particles = [];
 
                     class Particle {
@@ -560,7 +543,6 @@ HTML_TEMPLATE = """
                         for (let i = 0; i < 35; i++) particles.push(new Particle(canvas.width / 2, canvas.height / 2, 'smoke'));
                     }
 
-                    // --- RITUEL DE MAINTIEN 3D ---
                     function startHold(e) {
                         e.preventDefault();
                         if (sealArea.style.pointerEvents === 'none') return;
@@ -574,11 +556,9 @@ HTML_TEMPLATE = """
                             const elapsed = Date.now() - startTime;
                             currentProgress = Math.min(elapsed / DURATION, 1);
 
-                            // 1. Remplissage du liquide magmatique (130px -> 0px)
                             const liquidY = 130 - (currentProgress * 130);
                             liquidRect.setAttribute('y', liquidY);
 
-                            // 2. Fissures incandescentes (50%+ progress)
                             if (currentProgress > 0.5) {
                                 const crackOpacity = (currentProgress - 0.5) * 2;
                                 cracksGroup.setAttribute('opacity', crackOpacity);
@@ -586,7 +566,6 @@ HTML_TEMPLATE = """
                                 cracksGroup.setAttribute('opacity', 0);
                             }
 
-                            // 3. Vibration & Oscillation 3D sous la pression
                             const vibrateX = (Math.random() - 0.5) * (currentProgress * 14);
                             const vibrateY = (Math.random() - 0.5) * (currentProgress * 14);
                             const vibrateRot = (Math.random() - 0.5) * (currentProgress * 8);
@@ -604,7 +583,6 @@ HTML_TEMPLATE = """
                         currentProgress = 0;
                         clearInterval(timer);
                         
-                        // Réinitialiser les visuels 3D
                         liquidRect.setAttribute('y', 130);
                         cracksGroup.setAttribute('opacity', 0);
                         sealInstruction.textContent = "Maintenir pour rompre le sceau";
@@ -617,12 +595,10 @@ HTML_TEMPLATE = """
                         isHolding = false;
                         sealArea.style.pointerEvents = 'none';
 
-                        // Animation de rupture 3D (bascule vers l'arrière et s'enfonce dans le fond)
                         sealStage.style.transition = 'transform 0.8s cubic-bezier(0.5, 0, 0.75, 0)';
                         sealStage.style.transform = 'rotateX(85deg) rotateZ(180deg) translateZ(-400px) scale(0.2)';
                         sealArea.style.opacity = '0';
 
-                        // Déflagration d'étincelles et fumée
                         triggerExplosion();
 
                         setTimeout(() => {
