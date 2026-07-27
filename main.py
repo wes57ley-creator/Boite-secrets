@@ -5,7 +5,7 @@ from supabase import create_client, Client
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cle_secrete_boite_secrets_999")
 
-# 🔒 MOT DE PASSE ADMIN RESTAURÉ
+# 🔒 MOT DE PASSE ADMIN
 ADMIN_PASSWORD = "Therec@nbeonly1"
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -18,7 +18,7 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print("Erreur initialisation Supabase:", e)
 
-# --- DESIGN CINÉMATIQUE / ATMOSPHÈRE SOMBRE & CINÉMATOGRAPHIQUE ---
+# --- DESIGN CINÉMATIQUE AVEC EFFET DE FUMÉE ÉVOLUTIF ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
@@ -81,6 +81,7 @@ HTML_TEMPLATE = """
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             position: relative;
+            overflow: hidden;
         }
         
         .form-title {
@@ -136,7 +137,6 @@ HTML_TEMPLATE = """
         
         .btn-submit {
             flex: 1.6;
-            background: #4a0f13;
             background: linear-gradient(135deg, #3b0a0d 0%, #5e1117 100%);
             color: #d4af37;
             border: 1px solid rgba(212, 175, 55, 0.3);
@@ -181,15 +181,25 @@ HTML_TEMPLATE = """
             margin-top: 6px;
         }
 
-        /* --- SANCTUAIRE & PRESS & HOLD HIGH-END --- */
+        /* --- SANCTUAIRE & CANVAS FUMÉE --- */
         .sanctuary-container {
             position: relative;
-            min-height: 220px;
+            min-height: 230px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             margin: 20px 0;
+        }
+
+        canvas#smokeCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 15;
         }
 
         .hold-seal-area {
@@ -231,7 +241,6 @@ HTML_TEMPLATE = """
             transition: color 0.4s ease, transform 0.4s ease;
         }
 
-        .hold-seal-area:active .seal-instructions,
         .hold-seal-area.holding .seal-instructions {
             color: #d4af37;
             transform: scale(1.03);
@@ -242,11 +251,11 @@ HTML_TEMPLATE = """
             width: 100%;
             text-align: center;
             opacity: 0;
-            filter: blur(18px);
+            filter: blur(12px);
             transform: scale(0.96);
-            transition: opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1), 
-                        filter 1.4s cubic-bezier(0.16, 1, 0.3, 1), 
-                        transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 1.6s cubic-bezier(0.16, 1, 0.3, 1), 
+                        filter 1.6s cubic-bezier(0.16, 1, 0.3, 1), 
+                        transform 1.6s cubic-bezier(0.16, 1, 0.3, 1);
             user-select: text;
         }
 
@@ -258,14 +267,14 @@ HTML_TEMPLATE = """
 
         .secret-quote {
             font-family: 'Cormorant Garamond', serif;
-            font-size: 1.4em;
+            font-size: 1.45em;
             line-height: 1.6;
             font-style: italic;
             padding: 10px;
         }
 
-        .gold-secret { color: #f2e3b6; text-shadow: 0 0 20px rgba(212, 175, 55, 0.25); }
-        .pink-secret { color: #ebd0d5; text-shadow: 0 0 20px rgba(180, 80, 100, 0.25); }
+        .gold-secret { color: #f2e3b6; text-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+        .pink-secret { color: #ebd0d5; text-shadow: 0 0 20px rgba(180, 80, 100, 0.3); }
 
         .warning-subtitle {
             color: #5a5045;
@@ -309,15 +318,15 @@ HTML_TEMPLATE = """
             {% if secret and secret.clean_text %}
                 <div class="sanctuary-container">
                     
+                    <!-- CANVAS DE FUMÉE SOMBRE & DORÉE -->
+                    <canvas id="smokeCanvas"></canvas>
+
                     <!-- SCEAU TACTILE (PRESS & HOLD) -->
                     <div class="hold-seal-area" id="sealArea">
                         <div class="seal-svg-wrapper">
                             <svg width="100" height="100" viewBox="0 0 100 100">
-                                <!-- Fond du cercle -->
                                 <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(212,175,55,0.15)" stroke-width="2"/>
-                                <!-- Anneau de progression -->
                                 <circle id="progressCircle" class="progress-ring-circle" cx="50" cy="50" r="45" fill="none" stroke="#d4af37" stroke-width="2.5"/>
-                                <!-- Symbole central gravé -->
                                 <polygon points="50,28 60,42 76,50 60,58 50,72 40,58 24,50 40,42" fill="none" stroke="#d4af37" stroke-width="1.2" opacity="0.8"/>
                                 <circle cx="50" cy="50" r="4" fill="#d4af37"/>
                             </svg>
@@ -325,7 +334,7 @@ HTML_TEMPLATE = """
                         <div class="seal-instructions" id="sealInstruction">Maintenir pour briser le sceau</div>
                     </div>
 
-                    <!-- TEXTE RÉVÉLÉ (BLUR TO SHARP) -->
+                    <!-- TEXTE RÉVÉLÉ -->
                     <div class="revealed-text-box" id="revealedBox">
                         <div class="secret-quote {% if secret.is_admin %}gold-secret{% else %}pink-secret{% endif %}">
                             « {{ secret.clean_text }} »
@@ -351,18 +360,101 @@ HTML_TEMPLATE = """
                     const revealedBox = document.getElementById('revealedBox');
                     const warningNotice = document.getElementById('warningNotice');
                     const actionControls = document.getElementById('actionControls');
+                    const canvas = document.getElementById('smokeCanvas');
+                    const ctx = canvas.getContext('2d');
 
                     let timer = null;
                     let startTime = 0;
-                    const DURATION = 2200; // 2.2 secondes de maintien requis
-                    const circumference = 2 * Math.PI * 45; // 282.74
+                    const DURATION = 2200; // 2.2 secondes
+                    const circumference = 2 * Math.PI * 45;
+                    let isHolding = false;
 
+                    // Ajuster le canvas à son conteneur
+                    function resizeCanvas() {
+                        canvas.width = canvas.offsetWidth;
+                        canvas.height = canvas.offsetHeight;
+                    }
+                    resizeCanvas();
+                    window.addEventListener('resize', resizeCanvas);
+
+                    // --- MOTEUR DE PARTICULES DE FUMÉE ---
+                    let particles = [];
+
+                    class Particle {
+                        constructor(x, y, isBurst = false) {
+                            this.x = x || canvas.width / 2 + (Math.random() - 0.5) * 30;
+                            this.y = y || canvas.height / 2 + (Math.random() - 0.5) * 30;
+                            this.radius = isBurst ? Math.random() * 25 + 15 : Math.random() * 15 + 8;
+                            this.maxRadius = this.radius + (Math.random() * 30 + 20);
+                            this.vx = (Math.random() - 0.5) * (isBurst ? 2.5 : 0.8);
+                            this.vy = isBurst ? -(Math.random() * 2 + 1) : -(Math.random() * 1 + 0.3);
+                            this.alpha = isBurst ? Math.random() * 0.4 + 0.3 : Math.random() * 0.25 + 0.1;
+                            this.decay = Math.random() * 0.005 + 0.003;
+                            
+                            // Teintes de fumée : mélange de gris sombre et d'or très léger
+                            const isGold = Math.random() > 0.7;
+                            this.color = isGold ? '212, 175, 55' : '120, 105, 95';
+                        }
+
+                        update() {
+                            this.x += this.vx;
+                            this.y += this.vy;
+                            if (this.radius < this.maxRadius) this.radius += 0.3;
+                            this.alpha -= this.decay;
+                        }
+
+                        draw() {
+                            if (this.alpha <= 0) return;
+                            ctx.save();
+                            ctx.beginPath();
+                            let gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                            gradient.addColorStop(0, `rgba(${this.color}, ${this.alpha})`);
+                            gradient.addColorStop(0.6, `rgba(${this.color}, ${this.alpha * 0.4})`);
+                            gradient.addColorStop(1, `rgba(${this.color}, 0)`);
+                            ctx.fillStyle = gradient;
+                            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.restore();
+                        }
+                    }
+
+                    function animateSmoke() {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                        // Si la pression est active, générer de la fumée en continu
+                        if (isHolding) {
+                            for (let i = 0; i < 2; i++) {
+                                particles.push(new Particle());
+                            }
+                        }
+
+                        for (let i = particles.length - 1; i >= 0; i--) {
+                            particles[i].update();
+                            particles[i].draw();
+                            if (particles[i].alpha <= 0) {
+                                particles.splice(i, 1);
+                            }
+                        }
+
+                        requestAnimationFrame(animateSmoke);
+                    }
+                    animateSmoke();
+
+                    function burstSmoke() {
+                        // Explosion de fumée intense au déverrouillage
+                        for (let i = 0; i < 45; i++) {
+                            particles.push(new Particle(canvas.width / 2, canvas.height / 2, true));
+                        }
+                    }
+
+                    // --- LOGIQUE DE MAINTIEN ---
                     function startHold(e) {
                         e.preventDefault();
                         if (sealArea.style.pointerEvents === 'none') return;
 
+                        isHolding = true;
                         startTime = Date.now();
-                        instruction.textContent = "Libération imminente...";
+                        instruction.textContent = "Dissolution du sceau...";
                         sealArea.classList.add('holding');
 
                         timer = setInterval(() => {
@@ -379,6 +471,7 @@ HTML_TEMPLATE = """
 
                     function cancelHold() {
                         if (sealArea.style.pointerEvents === 'none') return;
+                        isHolding = false;
                         clearInterval(timer);
                         progressCircle.style.strokeDashoffset = circumference;
                         instruction.textContent = "Maintenir pour briser le sceau";
@@ -387,18 +480,21 @@ HTML_TEMPLATE = """
 
                     function completeReveal() {
                         clearInterval(timer);
+                        isHolding = false;
                         sealArea.style.pointerEvents = 'none';
                         sealArea.style.opacity = '0';
+
+                        // Déclencher le nuage de fumée
+                        burstSmoke();
 
                         setTimeout(() => {
                             sealArea.style.display = 'none';
                             revealedBox.classList.add('visible');
                             warningNotice.style.opacity = '1';
                             actionControls.style.display = 'flex';
-                        }, 600);
+                        }, 500);
                     }
 
-                    // Événements Souris & Tactile
                     sealArea.addEventListener('mousedown', startHold);
                     sealArea.addEventListener('mouseup', cancelHold);
                     sealArea.addEventListener('mouseleave', cancelHold);
