@@ -1,12 +1,15 @@
 import os
+import requests
+import difflib
 from flask import Flask, request, redirect, url_for, render_template_string, session
 from supabase import create_client, Client
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cle_secrete_boite_secrets_999")
 
-# 🔒 MOT DE PASSE ADMIN
+# 🔒 MOT DE PASSE ADMIN & CLÉ IA (Optionnelle)
 ADMIN_PASSWORD = "Therec@nbeonly1"
+HF_API_KEY = os.environ.get("HF_API_KEY")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -18,7 +21,41 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print("Erreur initialisation Supabase:", e)
 
-# --- DESIGN HAUTE COUTURE / FOND ÉCLAIRCI & NOUVEAU TITRE ---
+# --- ALGORITHME DE COMPARAISON SÉMANTIQUE ---
+def compute_similarity(text1, text2):
+    """Calcule la similitude de sens entre deux textes (de 0.0 à 1.0)"""
+    t1 = text1.replace("[ADMIN]", "").strip().lower()
+    t2 = text2.replace("[ADMIN]", "").strip().lower()
+
+    if t1 == t2:
+        return 1.0
+
+    # Option 1 : Modèle d'IA via Hugging Face si clé présente
+    if HF_API_KEY:
+        try:
+            api_url = "https://api-inference.huggingface.co/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+            headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+            payload = {"inputs": {"source_sentence": t1, "sentences": [t2]}}
+            res = requests.post(api_url, headers=headers, json=payload, timeout=3)
+            if res.status_code == 200:
+                scores = res.json()
+                if isinstance(scores, list) and len(scores) > 0:
+                    return float(scores[0])
+        except Exception as e:
+            print("Erreur API IA, bascule sur comparateur local:", e)
+
+    # Option 2 : Comparateur local (Mots & Structure)
+    ratio = difflib.SequenceMatcher(None, t1, t2).ratio()
+    words1 = set(w for w in t1.split() if len(w) > 2)
+    words2 = set(w for w in t2.split() if len(w) > 2)
+    
+    jaccard = 0.0
+    if words1 and words2:
+        jaccard = len(words1 & words2) / len(words1 | words2)
+
+    return max(ratio, jaccard)
+
+# --- DESIGN & TEMPLATE ---
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
@@ -48,7 +85,7 @@ HTML_TEMPLATE = """
             padding: 20px;
         }
         
-        .header { text-align: center; margin-bottom: 30px; }
+        .header { text-align: center; margin-bottom: 20px; }
         
         h1 {
             font-family: 'Cormorant Garamond', serif;
@@ -70,6 +107,31 @@ HTML_TEMPLATE = """
             margin-top: 10px;
         }
         
+        /* BANDEAU RECONNAISSANCE SÉMANTIQUE */
+        .match-banner {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 4px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.35em;
+            font-style: italic;
+            color: #fceabb;
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(15px);
+            animation: fadeIn 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .card {
             width: 100%;
             max-width: 480px;
@@ -311,6 +373,13 @@ HTML_TEMPLATE = """
         <h1>La boîte à secrets</h1>
         <div class="subtitle">Le Sanctuaire de vos Confidences</div>
     </div>
+
+    <!-- BANDEAU ACCORD DES ÂMES -->
+    {% if matched_count and matched_count >= 1 %}
+        <div class="match-banner">
+            ✨ Vos âmes se sont accordées sur {{ matched_count }} secret{% if matched_count > 1 %}s{% endif %}
+        </div>
+    {% endif %}
 
     <div class="card">
         {% if view == 'home' %}
@@ -652,7 +721,9 @@ HTML_TEMPLATE = """
             
             {% for s in secrets %}
                 <div style="padding:14px; margin-bottom:12px; border-radius:2px; font-family:'Cormorant Garamond', serif; font-size:1.1em; font-style:italic; display:flex; justify-content:space-between; align-items:center; background:rgba(6,5,5,0.7); border:1px solid rgba(212,175,55,0.15);">
-                    <span class="{% if s.is_admin %}gold-secret{% else %}pink-secret{% endif %}">« {{ s.clean_text }} »</span>
+                    <span class="{% if s.is_admin %}gold-secret{% else %}pink-secret{% endif %}">
+                        « {{ s.clean_text }} » {% if s.similar_count > 1 %}<small style="color:#d4af37; font-size:0.8em;">(x{{ s.similar_count }})</small>{% endif %}
+                    </span>
                     {% if s.id %}
                         <a href="/delete/{{ s.id }}" class="delete-btn" onclick="return confirm('Supprimer ce secret ?')">✕</a>
                     {% endif %}
@@ -685,7 +756,8 @@ def parse_single_secret(item):
     return {
         'id': item.get('id'),
         'clean_text': clean_text,
-        'is_admin': is_admin
+        'is_admin': is_admin,
+        'similar_count': item.get('similar_count', 1)
     }
 
 def process_secrets(data):
@@ -699,6 +771,8 @@ def process_secrets(data):
 @app.route('/')
 def home():
     total_secrets = 0
+    matched_count = session.pop('matched_count', None) # Récupère et réinitialise la notification
+
     if supabase:
         try:
             res = supabase.table('idees').select('*', count='exact').execute()
@@ -709,7 +783,7 @@ def home():
         except Exception as e:
             print("Erreur Supabase Home:", e)
             
-    return render_template_string(HTML_TEMPLATE, view='home', total_secrets=total_secrets)
+    return render_template_string(HTML_TEMPLATE, view='home', total_secrets=total_secrets, matched_count=matched_count)
 
 @app.route('/reveal_next')
 def reveal_next():
@@ -778,12 +852,53 @@ def add_secret():
     content = request.form.get('content')
     if content and supabase:
         try:
-            try:
-                supabase.table('idees').insert({'content': content}).execute()
-            except:
-                supabase.table('idees').insert({'texte': content}).execute()
+            # 1. Récupération des secrets existants
+            res = supabase.table('idees').select('*').execute()
+            existing_secrets = res.data if res.data else []
+
+            matched_secret = None
+            max_sim = 0.0
+
+            # 2. Recherche d'une idée similaire dans la base
+            for item in existing_secrets:
+                existing_text = item.get('content') or item.get('texte') or ""
+                sim = compute_similarity(content, existing_text)
+                if sim > max_sim:
+                    max_sim = sim
+                    matched_secret = item
+
+            # 3. Si le fond de l'idée est identique à au moins 78%
+            if matched_secret and max_sim >= 0.78:
+                current_count = matched_secret.get('similar_count', 1)
+                new_count = current_count + 1
+                secret_id = matched_secret.get('id')
+
+                # On incrémente le compteur de récurrence du secret d'origine
+                try:
+                    supabase.table('idees').update({'similar_count': new_count}).eq('id', secret_id).execute()
+                except:
+                    pass
+
+                # 4. Calcul du nombre total d'idées communes dans le sanctuaire
+                matched_concepts_count = 1
+                try:
+                    shared_res = supabase.table('idees').select('id').gt('similar_count', 1).execute()
+                    if shared_res.data:
+                        matched_concepts_count = len(shared_res.data)
+                except:
+                    pass
+
+                session['matched_count'] = matched_concepts_count
+            else:
+                # Nouvelle idée unique : insertion normale
+                try:
+                    supabase.table('idees').insert({'content': content, 'similar_count': 1}).execute()
+                except:
+                    supabase.table('idees').insert({'content': content}).execute()
+
         except Exception as e:
-            print("Erreur enregistrement:", e)
+            print("Erreur enregistrement / comparaison:", e)
+
     return redirect(url_for('home'))
 
 @app.route('/add_admin', methods=['POST'])
@@ -793,10 +908,7 @@ def add_admin_secret():
         if content and supabase:
             admin_content = "[ADMIN]" + content
             try:
-                try:
-                    supabase.table('idees').insert({'content': admin_content}).execute()
-                except:
-                    supabase.table('idees').insert({'texte': admin_content}).execute()
+                supabase.table('idees').insert({'content': admin_content, 'similar_count': 1}).execute()
             except Exception as e:
                 print("Erreur enregistrement admin:", e)
     return redirect(url_for('admin'))
