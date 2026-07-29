@@ -1,16 +1,19 @@
 import os
 import requests
 import difflib
+import re
+import unicodedata
 from flask import Flask, request, redirect, url_for, render_template_string, session
 from supabase import create_client, Client
 
+# ==========================================
+# 1. CONFIGURATION ET INITIALISATION
+# ==========================================
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "cle_secrete_boite_secrets_999")
 
-# 🔒 MOT DE PASSE ADMIN & CLÉ IA (Optionnelle)
 ADMIN_PASSWORD = "Therec@nbeonly1"
 HF_API_KEY = os.environ.get("HF_API_KEY")
-
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
@@ -21,22 +24,42 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print("Erreur initialisation Supabase:", e)
 
-# --- ALGORITHME DE COMPARAISON SÉMANTIQUE ---
-def compute_similarity(text1, text2):
-    """Calcule la similitude de sens entre deux textes (de 0.0 à 1.0)"""
-    t1 = text1.replace("[ADMIN]", "").strip().lower()
-    t2 = text2.replace("[ADMIN]", "").strip().lower()
 
-    if t1 == t2:
+# ==========================================
+# 2. ALGORITHMES DE COMPARAISON (LE FOND)
+# ==========================================
+def clean_text_for_matching(text):
+    """Nettoie et extrait l'intention fondamentale (Solution de secours local)"""
+    text = text.lower()
+    text = ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+    
+    # Normalisation des expressions équivalentes
+    text = re.sub(r'\ba deux\b|\ba 2\b|\bdeux\b|\b2\b', 'ensemble', text)
+    text = re.sub(r'\bse douche\b|\bdoucher\b|\bdouches\b', 'douche', text)
+    text = re.sub(r'\bbalneo\b|\bjacuzzi\b|\bbaignoire\b|\bbaigner\b', 'bain', text)
+    
+    stop_words = {'je', 'tu', 'il', 'elle', 'on', 'nous', 'vous', 'qu', 'que', 'quon', 
+                  'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'se', 'sa', 'son', 
+                  'prenne', 'prendre', 'veux', 'vouloir', 'aimerais', 'fasse', 'faire'}
+    
+    words = [w for w in re.findall(r'\b\w+\b', text) if w not in stop_words and len(w) > 1]
+    return words
+
+def compute_similarity(text1, text2):
+    """Calcule la similitude de SENS entre deux idées (de 0.0 à 1.0)"""
+    t1 = text1.replace("[ADMIN]", "").strip()
+    t2 = text2.replace("[ADMIN]", "").strip()
+
+    if t1.lower() == t2.lower():
         return 1.0
 
-    # Option 1 : Modèle d'IA via Hugging Face si clé présente
+    # 1. Analyse Sémantique via IA Hugging Face (Priorité au Fond)
     if HF_API_KEY:
         try:
             api_url = "https://api-inference.huggingface.co/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
             headers = {"Authorization": f"Bearer {HF_API_KEY}"}
             payload = {"inputs": {"source_sentence": t1, "sentences": [t2]}}
-            res = requests.post(api_url, headers=headers, json=payload, timeout=3)
+            res = requests.post(api_url, headers=headers, json=payload, timeout=4)
             if res.status_code == 200:
                 scores = res.json()
                 if isinstance(scores, list) and len(scores) > 0:
@@ -44,18 +67,21 @@ def compute_similarity(text1, text2):
         except Exception as e:
             print("Erreur API IA, bascule sur comparateur local:", e)
 
-    # Option 2 : Comparateur local (Mots & Structure)
-    ratio = difflib.SequenceMatcher(None, t1, t2).ratio()
-    words1 = set(w for w in t1.split() if len(w) > 2)
-    words2 = set(w for w in t2.split() if len(w) > 2)
-    
+    # 2. Comparateur local par analyse de mots-clés
+    words1 = set(clean_text_for_matching(t1))
+    words2 = set(clean_text_for_matching(t2))
+
     jaccard = 0.0
     if words1 and words2:
         jaccard = len(words1 & words2) / len(words1 | words2)
 
-    return max(ratio, jaccard)
+    ratio = difflib.SequenceMatcher(None, t1.lower(), t2.lower()).ratio()
+    return max(jaccard, ratio)
 
-# --- DESIGN & TEMPLATE ---
+
+# ==========================================
+# 3. INTERFACE VISUELLE (HTML / CSS / JS)
+# ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="fr">
@@ -107,7 +133,6 @@ HTML_TEMPLATE = """
             margin-top: 10px;
         }
         
-        /* BANDEAU RECONNAISSANCE SÉMANTIQUE */
         .match-banner {
             width: 100%;
             max-width: 480px;
@@ -243,7 +268,6 @@ HTML_TEMPLATE = """
             margin-top: 6px;
         }
 
-        /* --- SANCTUAIRE & PERSPECTIVE 3D --- */
         .sanctuary-container {
             position: relative;
             min-height: 260px;
@@ -374,7 +398,6 @@ HTML_TEMPLATE = """
         <div class="subtitle">Le Sanctuaire de vos Confidences</div>
     </div>
 
-    <!-- BANDEAU ACCORD DES ÂMES -->
     {% if matched_count and matched_count >= 1 %}
         <div class="match-banner">
             ✨ Vos âmes se sont accordées sur {{ matched_count }} secret{% if matched_count > 1 %}s{% endif %}
@@ -407,7 +430,6 @@ HTML_TEMPLATE = """
 
                     <div class="hold-seal-area" id="sealArea">
                         <div class="seal-3d-stage" id="sealStage">
-                            
                             <svg class="seal-svg-main" viewBox="0 0 130 130">
                                 <defs>
                                     <radialGradient id="goldPlate" cx="35%" cy="30%" r="70%">
@@ -439,7 +461,6 @@ HTML_TEMPLATE = """
                                 <circle cx="65" cy="65" r="58" fill="url(#goldPlate)" stroke="#1a1203" stroke-width="3"/>
                                 <circle cx="65" cy="65" r="50" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
                                 <circle cx="65" cy="65" r="48" fill="#0c0806" stroke="#4a3610" stroke-width="2"/>
-
                                 <circle cx="65" cy="65" r="47" fill="url(#liquidGrad)" clip-path="url(#liquidClip)" opacity="0.92"/>
 
                                 <g id="cracksGroup" opacity="0" filter="url(#glow)">
@@ -453,7 +474,6 @@ HTML_TEMPLATE = """
                                 <polygon points="30,5 38,20 55,30 38,40 30,55 22,40 5,30 22,20" fill="none" stroke="#fceabb" stroke-width="2" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.8))"/>
                                 <circle cx="30" cy="30" r="5" fill="#fceabb"/>
                             </svg>
-
                         </div>
                         <div class="seal-instructions" id="sealInstruction">Maintenir pour rompre le sceau</div>
                     </div>
@@ -503,17 +523,13 @@ HTML_TEMPLATE = """
 
                     function handle3DTilt(e) {
                         if (isHolding || sealArea.style.pointerEvents === 'none') return;
-
                         const rect = sealArea.getBoundingClientRect();
                         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
                         const x = clientX - rect.left - rect.width / 2;
                         const y = clientY - rect.top - rect.height / 2;
-
                         const tiltX = (y / (rect.height / 2)) * -25;
                         const tiltY = (x / (rect.width / 2)) * 25;
-
                         sealStage.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.04)`;
                     }
 
@@ -528,13 +544,11 @@ HTML_TEMPLATE = """
                     sealArea.addEventListener('touchmove', handle3DTilt, {passive: true});
 
                     let particles = [];
-
                     class Particle {
                         constructor(x, y, type = 'smoke') {
                             this.x = x || canvas.width / 2 + (Math.random() - 0.5) * 30;
                             this.y = y || canvas.height / 2 + (Math.random() - 0.5) * 30;
                             this.type = type;
-
                             if (type === 'ember') {
                                 this.radius = Math.random() * 3 + 1;
                                 this.vx = (Math.random() - 0.5) * 4;
@@ -552,34 +566,25 @@ HTML_TEMPLATE = """
                                 this.color = Math.random() > 0.5 ? '212, 175, 55' : '90, 75, 65';
                             }
                         }
-
                         update() {
-                            this.x += this.vx;
-                            this.y += this.vy;
-                            if (this.type === 'smoke' && this.radius < this.maxRadius) {
-                                this.radius += 0.45;
-                            }
+                            this.x += this.vx; this.y += this.vy;
+                            if (this.type === 'smoke' && this.radius < this.maxRadius) this.radius += 0.45;
                             this.alpha -= this.decay;
                         }
-
                         draw() {
                             if (this.alpha <= 0) return;
-                            ctx.save();
-                            ctx.beginPath();
+                            ctx.save(); ctx.beginPath();
                             if (this.type === 'ember') {
-                                ctx.shadowBlur = 10;
-                                ctx.shadowColor = `rgba(${this.color}, 0.9)`;
+                                ctx.shadowBlur = 10; ctx.shadowColor = `rgba(${this.color}, 0.9)`;
                                 ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
-                                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                                ctx.fill();
+                                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
                             } else {
                                 let grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
                                 grad.addColorStop(0, `rgba(${this.color}, ${this.alpha})`);
                                 grad.addColorStop(0.7, `rgba(${this.color}, ${this.alpha * 0.3})`);
                                 grad.addColorStop(1, `rgba(${this.color}, 0)`);
                                 ctx.fillStyle = grad;
-                                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                                ctx.fill();
+                                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
                             }
                             ctx.restore();
                         }
@@ -587,22 +592,14 @@ HTML_TEMPLATE = """
 
                     function renderParticles() {
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
                         if (isHolding) {
                             particles.push(new Particle(null, null, 'smoke'));
-                            if (currentProgress > 0.35 && Math.random() > 0.25) {
-                                particles.push(new Particle(null, null, 'ember'));
-                            }
+                            if (currentProgress > 0.35 && Math.random() > 0.25) particles.push(new Particle(null, null, 'ember'));
                         }
-
                         for (let i = particles.length - 1; i >= 0; i--) {
-                            particles[i].update();
-                            particles[i].draw();
-                            if (particles[i].alpha <= 0) {
-                                particles.splice(i, 1);
-                            }
+                            particles[i].update(); particles[i].draw();
+                            if (particles[i].alpha <= 0) particles.splice(i, 1);
                         }
-
                         requestAnimationFrame(renderParticles);
                     }
                     renderParticles();
@@ -615,61 +612,39 @@ HTML_TEMPLATE = """
                     function startHold(e) {
                         e.preventDefault();
                         if (sealArea.style.pointerEvents === 'none') return;
-
-                        isHolding = true;
-                        startTime = Date.now();
+                        isHolding = true; startTime = Date.now();
                         sealInstruction.textContent = "Fusion en cours...";
                         sealArea.classList.add('holding');
-
                         timer = setInterval(() => {
                             const elapsed = Date.now() - startTime;
                             currentProgress = Math.min(elapsed / DURATION, 1);
-
-                            const liquidY = 130 - (currentProgress * 130);
-                            liquidRect.setAttribute('y', liquidY);
-
+                            liquidRect.setAttribute('y', 130 - (currentProgress * 130));
                             if (currentProgress > 0.5) {
-                                const crackOpacity = (currentProgress - 0.5) * 2;
-                                cracksGroup.setAttribute('opacity', crackOpacity);
+                                cracksGroup.setAttribute('opacity', (currentProgress - 0.5) * 2);
                             } else {
                                 cracksGroup.setAttribute('opacity', 0);
                             }
-
                             const vibrateX = (Math.random() - 0.5) * (currentProgress * 14);
                             const vibrateY = (Math.random() - 0.5) * (currentProgress * 14);
-                            const vibrateRot = (Math.random() - 0.5) * (currentProgress * 8);
-                            sealStage.style.transform = `rotateX(${vibrateX}deg) rotateY(${vibrateY}deg) rotateZ(${vibrateRot}deg) scale(${1 + currentProgress * 0.08})`;
-
-                            if (currentProgress >= 1) {
-                                completeReveal();
-                            }
+                            sealStage.style.transform = `rotateX(${vibrateX}deg) rotateY(${vibrateY}deg) scale(${1 + currentProgress * 0.08})`;
+                            if (currentProgress >= 1) completeReveal();
                         }, 20);
                     }
 
                     function cancelHold() {
                         if (sealArea.style.pointerEvents === 'none') return;
-                        isHolding = false;
-                        currentProgress = 0;
-                        clearInterval(timer);
-                        
-                        liquidRect.setAttribute('y', 130);
-                        cracksGroup.setAttribute('opacity', 0);
+                        isHolding = false; currentProgress = 0; clearInterval(timer);
+                        liquidRect.setAttribute('y', 130); cracksGroup.setAttribute('opacity', 0);
                         sealInstruction.textContent = "Maintenir pour rompre le sceau";
-                        sealArea.classList.remove('holding');
-                        reset3DTilt();
+                        sealArea.classList.remove('holding'); reset3DTilt();
                     }
 
                     function completeReveal() {
-                        clearInterval(timer);
-                        isHolding = false;
-                        sealArea.style.pointerEvents = 'none';
-
+                        clearInterval(timer); isHolding = false; sealArea.style.pointerEvents = 'none';
                         sealStage.style.transition = 'transform 0.8s cubic-bezier(0.5, 0, 0.75, 0)';
-                        sealStage.style.transform = 'rotateX(85deg) rotateZ(180deg) translateZ(-400px) scale(0.2)';
+                        sealStage.style.transform = 'rotateX(85deg) translateZ(-400px) scale(0.2)';
                         sealArea.style.opacity = '0';
-
                         triggerExplosion();
-
                         setTimeout(() => {
                             sealArea.style.display = 'none';
                             revealedBox.classList.add('visible');
@@ -681,7 +656,6 @@ HTML_TEMPLATE = """
                     sealArea.addEventListener('mousedown', startHold);
                     sealArea.addEventListener('mouseup', cancelHold);
                     sealArea.addEventListener('mouseleave', cancelHold);
-
                     sealArea.addEventListener('touchstart', startHold, {passive: false});
                     sealArea.addEventListener('touchend', cancelHold);
                     sealArea.addEventListener('touchcancel', cancelHold);
@@ -695,37 +669,32 @@ HTML_TEMPLATE = """
 
         {% elif view == 'login' %}
             <label class="form-title">Accès Restreint</label>
-            
             {% if error %}
                 <div style="color:#a83b3b; text-align:center; font-size:0.8em; margin-bottom:15px; font-family:'Cinzel', serif;">{{ error }}</div>
             {% endif %}
-
             <form action="/admin" method="POST">
                 <input type="password" name="password" placeholder="Mot de passe..." required>
                 <button type="submit" class="btn btn-submit" style="width: 100%;">Franchir le Seuil</button>
             </form>
-
             <div style="margin-top: 20px; text-align:center;">
-                <a href="/" style="color:#6e6254; text-decoration:none; font-size:0.75em; font-family:'Cinzel', serif; letter-spacing: 2px;">Retour</a>
+                <a href="/" style="color:#6e6254; text-decoration:none; font-size:0.75em; font-family:'Cinzel', serif;">Retour</a>
             </div>
 
         {% elif view == 'admin' %}
             <label class="form-title">Espace Gardien</label>
-
             <form action="/add_admin" method="POST" style="margin-bottom: 30px;">
                 <textarea name="content" placeholder="Déposer un secret d'Or..." style="height: 90px;" required></textarea>
                 <button type="submit" class="btn btn-reveal" style="width: 100%;">Sceller en Or ✨</button>
             </form>
 
-            <p style="text-align:center; color:#6e6254; font-family:'Cinzel', serif; font-size:0.7em; letter-spacing: 2px; margin-bottom:15px; text-transform:uppercase;">Secrets actuellement scellés</p>
-            
+            <p style="text-align:center; color:#6e6254; font-family:'Cinzel', serif; font-size:0.7em; margin-bottom:15px; text-transform:uppercase;">Secrets scellés</p>
             {% for s in secrets %}
                 <div style="padding:14px; margin-bottom:12px; border-radius:2px; font-family:'Cormorant Garamond', serif; font-size:1.1em; font-style:italic; display:flex; justify-content:space-between; align-items:center; background:rgba(6,5,5,0.7); border:1px solid rgba(212,175,55,0.15);">
                     <span class="{% if s.is_admin %}gold-secret{% else %}pink-secret{% endif %}">
-                        « {{ s.clean_text }} » {% if s.similar_count > 1 %}<small style="color:#d4af37; font-size:0.8em;">(x{{ s.similar_count }})</small>{% endif %}
+                        « {{ s.clean_text }} » {% if s.similar_count > 1 %}<small style="color:#d4af37;">(x{{ s.similar_count }})</small>{% endif %}
                     </span>
                     {% if s.id %}
-                        <a href="/delete/{{ s.id }}" class="delete-btn" onclick="return confirm('Supprimer ce secret ?')">✕</a>
+                        <a href="/delete/{{ s.id }}" class="delete-btn" onclick="return confirm('Supprimer ?')">✕</a>
                     {% endif %}
                 </div>
             {% else %}
@@ -742,10 +711,12 @@ HTML_TEMPLATE = """
 </html>
 """
 
+# ==========================================
+# 4. FONCTIONS AUXILIAIRES & ROUTES FLASK
+# ==========================================
 def parse_single_secret(item):
-    if not item or not isinstance(item, dict):
-        return None
-    raw_text = item.get('content') or item.get('texte') or item.get('idee') or ""
+    if not item or not isinstance(item, dict): return None
+    raw_text = item.get('content') or ""
     is_admin = False
     if raw_text.startswith("[ADMIN]"):
         is_admin = True
@@ -760,18 +731,10 @@ def parse_single_secret(item):
         'similar_count': item.get('similar_count', 1)
     }
 
-def process_secrets(data):
-    clean_list = []
-    for item in data:
-        s = parse_single_secret(item)
-        if s:
-            clean_list.append(s)
-    return clean_list
-
 @app.route('/')
 def home():
     total_secrets = 0
-    matched_count = session.pop('matched_count', None) # Récupère et réinitialise la notification
+    matched_count = session.pop('matched_count', None)
 
     if supabase:
         try:
@@ -782,8 +745,59 @@ def home():
                 total_secrets = len(res.data)
         except Exception as e:
             print("Erreur Supabase Home:", e)
-            
+
     return render_template_string(HTML_TEMPLATE, view='home', total_secrets=total_secrets, matched_count=matched_count)
+
+@app.route('/add', methods=['POST'])
+def add_secret():
+    content = request.form.get('content')
+    if content and supabase:
+        try:
+            res = supabase.table('idees').select('*').execute()
+            existing_secrets = res.data if res.data else []
+
+            matched_secret = None
+            max_sim = 0.0
+
+            # Comparaison de FOND avec chaque secret existant
+            for item in existing_secrets:
+                existing_text = item.get('content') or ""
+                sim = compute_similarity(content, existing_text)
+                if sim > max_sim:
+                    max_sim = sim
+                    matched_secret = item
+
+            # Seuil fixé à 0.55 pour capter les sens similaires
+            if matched_secret and max_sim >= 0.55:
+                current_count = matched_secret.get('similar_count', 1)
+                new_count = current_count + 1
+                secret_id = matched_secret.get('id')
+
+                try:
+                    supabase.table('idees').update({'similar_count': new_count}).eq('id', secret_id).execute()
+                except:
+                    pass
+
+                # Calcul du nombre total d'idées en commun
+                matched_concepts_count = 1
+                try:
+                    shared_res = supabase.table('idees').select('id').gt('similar_count', 1).execute()
+                    if shared_res.data:
+                        matched_concepts_count = len(shared_res.data)
+                except:
+                    pass
+
+                session['matched_count'] = matched_concepts_count
+            else:
+                try:
+                    supabase.table('idees').insert({'content': content, 'similar_count': 1}).execute()
+                except:
+                    supabase.table('idees').insert({'content': content}).execute()
+
+        except Exception as e:
+            print("Erreur enregistrement / comparaison:", e)
+
+    return redirect(url_for('home'))
 
 @app.route('/reveal_next')
 def reveal_next():
@@ -793,7 +807,6 @@ def reveal_next():
     if supabase:
         try:
             res = supabase.table('idees').select('*').limit(1).execute()
-            
             if res.data and len(res.data) > 0:
                 raw_item = res.data[0]
                 secret_to_show = parse_single_secret(raw_item)
@@ -811,19 +824,13 @@ def reveal_next():
         except Exception as e:
             print("Erreur Révélation Supabase:", e)
 
-    return render_template_string(
-        HTML_TEMPLATE, 
-        view='reveal', 
-        secret=secret_to_show, 
-        remaining_secrets=remaining_secrets
-    )
+    return render_template_string(HTML_TEMPLATE, view='reveal', secret=secret_to_show, remaining_secrets=remaining_secrets)
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     error = None
     if request.method == 'POST':
-        pwd = request.form.get('password')
-        if pwd == ADMIN_PASSWORD:
+        if request.form.get('password') == ADMIN_PASSWORD:
             session['logged_in'] = True
         else:
             error = "Accès refusé"
@@ -836,79 +843,19 @@ def admin():
         try:
             res = supabase.table('idees').select('*').execute()
             if res.data:
-                secrets_list = process_secrets(res.data)
+                secrets_list = [parse_single_secret(x) for x in res.data if parse_single_secret(x)]
         except Exception as e:
             print("Erreur Supabase Admin:", e)
-            
+
     return render_template_string(HTML_TEMPLATE, view='admin', secrets=secrets_list)
-
-@app.route('/logout')
-def logout():
-    session.pop('logged_in', None)
-    return redirect(url_for('home'))
-
-@app.route('/add', methods=['POST'])
-def add_secret():
-    content = request.form.get('content')
-    if content and supabase:
-        try:
-            # 1. Récupération des secrets existants
-            res = supabase.table('idees').select('*').execute()
-            existing_secrets = res.data if res.data else []
-
-            matched_secret = None
-            max_sim = 0.0
-
-            # 2. Recherche d'une idée similaire dans la base
-            for item in existing_secrets:
-                existing_text = item.get('content') or item.get('texte') or ""
-                sim = compute_similarity(content, existing_text)
-                if sim > max_sim:
-                    max_sim = sim
-                    matched_secret = item
-
-            # 3. Si le fond de l'idée est identique à au moins 78%
-            if matched_secret and max_sim >= 0.78:
-                current_count = matched_secret.get('similar_count', 1)
-                new_count = current_count + 1
-                secret_id = matched_secret.get('id')
-
-                # On incrémente le compteur de récurrence du secret d'origine
-                try:
-                    supabase.table('idees').update({'similar_count': new_count}).eq('id', secret_id).execute()
-                except:
-                    pass
-
-                # 4. Calcul du nombre total d'idées communes dans le sanctuaire
-                matched_concepts_count = 1
-                try:
-                    shared_res = supabase.table('idees').select('id').gt('similar_count', 1).execute()
-                    if shared_res.data:
-                        matched_concepts_count = len(shared_res.data)
-                except:
-                    pass
-
-                session['matched_count'] = matched_concepts_count
-            else:
-                # Nouvelle idée unique : insertion normale
-                try:
-                    supabase.table('idees').insert({'content': content, 'similar_count': 1}).execute()
-                except:
-                    supabase.table('idees').insert({'content': content}).execute()
-
-        except Exception as e:
-            print("Erreur enregistrement / comparaison:", e)
-
-    return redirect(url_for('home'))
 
 @app.route('/add_admin', methods=['POST'])
 def add_admin_secret():
     if session.get('logged_in'):
         content = request.form.get('content')
         if content and supabase:
-            admin_content = "[ADMIN]" + content
             try:
-                supabase.table('idees').insert({'content': admin_content, 'similar_count': 1}).execute()
+                supabase.table('idees').insert({'content': "[ADMIN]" + content, 'similar_count': 1}).execute()
             except Exception as e:
                 print("Erreur enregistrement admin:", e)
     return redirect(url_for('admin'))
@@ -921,6 +868,11 @@ def delete_secret(secret_id):
         except Exception as e:
             print("Erreur suppression:", e)
     return redirect(url_for('admin'))
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
